@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriBot Enhanced - AI Agricultural Assistant</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌾 AgriBot Enhanced</h1>
+            <p>AI-Powered Agricultural Assistant for Indian Farmers</p>
+        </div>
+
+        <div class="setup-panel">
+            <div class="setup-row">
+                <div class="setup-group">
+                    <label for="region">Select Your Region:</label>
+                    <select id="region" aria-label="Select your region">
+                        <option value="">Choose your state/region</option>
+                        <option value="punjab">Punjab</option>
+                        <option value="haryana">Haryana</option>
+                        <option value="uttar-pradesh">Uttar Pradesh</option>
+                        <option value="bihar">Bihar</option>
+                        <option value="west-bengal">West Bengal</option>
+                        <option value="maharashtra">Maharashtra</option>
+                        <option value="gujarat">Gujarat</option>
+                        <option value="rajasthan">Rajasthan</option>
+                        <option value="madhya-pradesh">Madhya Pradesh</option>
+                        <option value="karnataka">Karnataka</option>
+                        <option value="tamil-nadu">Tamil Nadu</option>
+                        <option value="andhra-pradesh">Andhra Pradesh</option>
+                        <option value="telangana">Telangana</option>
+                        <option value="kerala">Kerala</option>
+                        <option value="odisha">Odisha</option>
+                        <option value="assam">Assam</option>
+                        <option value="jharkhand">Jharkhand</option>
+                        <option value="chhattisgarh">Chhattisgarh</option>
+                    </select>
+                </div>
+                <div class="setup-group">
+                    <label for="language">Preferred Language:</label>
+                    <select id="language" aria-label="Select your language">
+                        <option value="english">English</option>
+                        <option value="hindi">Hindi (Romanized)</option>
+                        <option value="punjabi">Punjabi (Romanized)</option>
+                        <option value="bengali">Bengali (Romanized)</option>
+                        <option value="marathi">Marathi (Romanized)</option>
+                        <option value="gujarati">Gujarati (Romanized)</option>
+                        <option value="tamil">Tamil (Romanized)</option>
+                        <option value="telugu">Telugu (Romanized)</option>
+                        <option value="kannada">Kannada (Romanized)</option>
+                        <option value="malayalam">Malayalam (Romanized)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="api-status">
+                <div class="status-indicator" id="plant-id-status">🔍 Plant.id API: Checking...</div>
+                <div class="status-indicator" id="plantnet-status">📡 PlantNet API: Checking...</div>
+                <div class="status-indicator" id="perenual-status">🌿 Perenual API: Checking...</div>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="messages" id="messages">
+                <div class="message system">
+                    🌟 Welcome to AgriBot Enhanced! Powered by AI for Indian farmers. Select your region and language, then:<br>
+                    • Upload plant images for disease analysis<br>
+                    • Ask about crops, diseases, or farming practices<br>
+                    • Get region-specific advice
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="sendQuickMessage('What crops are suitable for my region?')">🌾 Suitable Crops</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Current weather conditions for farming')">🌤️ Weather Info</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Common plant diseases in my area')">🦠 Disease Info</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Best fertilizers for my crops')">🧪 Fertilizer Guide</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Organic pest control methods')">🐛 Pest Control</button>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="input-group">
+                    <textarea
+                        id="messageInput"
+                        class="message-input"
+                        placeholder="Ask about plants, diseases, farming, or upload images..."
+                        rows="1"
+                        aria-label="Enter your question or upload an image"
+                    ></textarea>
+                    <button
+                        class="image-upload"
+                        onclick="document.getElementById('imageInput').click()"
+                        title="Upload plant image for analysis"
+                        aria-label="Upload plant image"
+                    >
+                        📷
+                    </button>
+                    <input
+                        type="file"
+                        id="imageInput"
+                        accept="image/*"
+                        class="hidden"
+                        aria-hidden="true"
+                    />
+                </div>
+                <button
+                    class="send-btn"
+                    id="sendBtn"
+                    onclick="sendMessage()"
+                    title="Send message"
+                    aria-label="Send message"
+                >
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgriBot Pro - AI Agricultural Assistant</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: #1A1A1A;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: #D1D5DB;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        max-width: 900px;
+        height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(45deg, #1E3A8A, #3B82F6);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .header h1 {
+        font-size: 24px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .header p {
+        font-size: 14px;
+        opacity: 0.9;
+      }
+
+      .setup-panel {
+        padding: 20px;
+        background: #D1D5DB;
+        border-bottom: 1px solid #4B5563;
+      }
+
+      .setup-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
+
+      .setup-group {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .setup-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #1A1A1A;
+      }
+
+      .setup-group select {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #4B5563;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      .setup-group select:focus {
+        outline: none;
+        border-color: #1E3A8A;
+      }
+
+      .chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        scroll-behavior: smooth;
+        color: #1E3A8A;
+      }
+
+      .message {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 18px;
+        animation: fadeIn 0.3s ease-in;
+        word-wrap: break-word;
+        color: #1E3A8A;
+      }
+
+      .message.user {
+        background: linear-gradient(45deg, #1E3A8A, #3B82F6);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 5px;
+      }
+
+      .message.bot {
+        background: #374151;
+        color: white;
+        align-self: flex-start;
+        border-bottom-left-radius: 5px;
+        border: 1px solid #4B5563;
+      }
+
+      .message.system {
+        background: #D1D5DB;
+        border: 1px solid #4B5563;
+        color: #1E3A8A;
+        align-self: center;
+        font-size: 12px;
+        border-radius: 20px;
+      }
+
+      .message.error {
+        background: #4B5563;
+        border: 1px solid #991B1B;
+        color: #D1D5DB;
+        align-self: center;
+        font-size: 12px;
+        border-radius: 20px;
+      }
+
+      .input-container {
+        padding: 20px;
+        background: #D1D5DB;
+        border-top: 1px solid #4B5563;
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+      }
+
+      .input-group {
+        flex: 1;
+        position: relative;
+      }
+
+      .message-input {
+        width: 100%;
+        padding: 12px 50px 12px 15px;
+        border: 2px solid #4B5563;
+        border-radius: 25px;
+        font-size: 14px;
+        resize: none;
+        max-height: 100px;
+        transition: border-color 0.3s;
+      }
+
+      .message-input:focus {
+        outline: none;
+        border-color: #1E3A8A;
+      }
+
+      .image-upload {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+        color: #4B5563;
+        transition: color 0.3s;
+        font-size: 18px;
+      }
+
+      .image-upload:hover {
+        color: #3B82F6;
+      }
+
+      .send-btn {
+        background: linear-gradient(45deg, #1E3A8A, #3B82F6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s;
+        font-size: 16px;
+      }
+
+      .send-btn:hover {
+        transform: scale(1.05);
+      }
+
+      .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .typing {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #1E3A8A;
+        font-style: italic;
+      }
+
+      .typing-dots {
+        display: flex;
+        gap: 3px;
+      }
+
+      .typing-dots span {
+        width: 6px;
+        height: 6px;
+        background: #4B5563;
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+      }
+
+      .typing-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .typing-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      .image-preview {
+        max-width: 200px;
+        max-height: 150px;
+        border-radius: 8px;
+        margin-top: 10px;
+        border: 2px solid #4B5563;
+      }
+
+      .analysis-result {
+        background: #D1D5DB;
+        border: 1px solid #1E3A8A;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 10px;
+        color: #1E3A8A;
+      }
+
+      .confidence-bar {
+        background: #4B5563;
+        border-radius: 10px;
+        height: 20px;
+        margin: 10px 0;
+        overflow: hidden;
+      }
+
+      .confidence-fill {
+        background: linear-gradient(45deg, #1E3A8A, #3B82F6);
+        height: 100%;
+        transition: width 0.5s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .loading {
+        opacity: 0.7;
+        pointer-events: none;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-10px); }
+      }
+
+      .quick-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .quick-btn {
+        background: #D1D5DB;
+        border: 1px solid #1E3A8A;
+        color: #1A1A1A;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .quick-btn:hover {
+        background: #1E3A8A;
+        color: white;
+      }
+
+      .api-status {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        font-size: 12px;
+      }
+
+      .status-indicator {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+      }
+
+      .status-online {
+        background: #BFDBFE;
+        color: #1A1A1A;
+      }
+
+      .status-offline {
+        background: #4B5563;
+        color: #D1D5DB;
+      }
+
+      @media (max-width: 600px) {
+        .setup-row {
+          flex-direction: column;
+        }
+
+        .setup-group {
+          min-width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🌾 AgriBot Pro</h1>
+        <p>AI-Powered Agricultural Assistant for Indian Farmers</p>
+      </div>
+
+      <div class="setup-panel">
+        <div class="setup-row">
+          <div class="setup-group">
+            <label for="region">Select Your Region:</label>
+            <select id="region" aria-label="Select your region">
+              <option value="">Choose your state/region</option>
+              <option value="punjab">Punjab</option>
+              <option value="haryana">Haryana</option>
+              <option value="uttar-pradesh">Uttar Pradesh</option>
+              <option value="bihar">Bihar</option>
+              <option value="west-bengal">West Bengal</option>
+              <option value="maharashtra">Maharashtra</option>
+              <option value="gujarat">Gujarat</option>
+              <option value="rajasthan">Rajasthan</option>
+              <option value="madhya-pradesh">Madhya Pradesh</option>
+              <option value="karnataka">Karnataka</option>
+              <option value="tamil-nadu">Tamil Nadu</option>
+              <option value="andhra-pradesh">Andhra Pradesh</option>
+              <option value="telangana">Telangana</option>
+              <option value="kerala">Kerala</option>
+              <option value="odisha">Odisha</option>
+              <option value="assam">Assam</option>
+              <option value="jharkhand">Jharkhand</option>
+              <option value="chhattisgarh">Chhattisgarh</option>
+            </select>
+          </div>
+          <div class="setup-group">
+            <label for="language">Preferred Language:</label>
+            <select id="language" aria-label="Select your language">
+              <option value="english">English</option>
+              <option value="hindi">Hindi (Romanized)</option>
+              <option value="punjabi">Punjabi (Romanized)</option>
+              <option value="bengali">Bengali (Romanized)</option>
+              <option value="marathi">Marathi (Romanized)</option>
+              <option value="gujarati">Gujarati (Romanized)</option>
+              <option value="tamil">Tamil (Romanized)</option>
+              <option value="telugu">Telugu (Romanized)</option>
+              <option value="kannada">Kannada (Romanized)</option>
+              <option value="malayalam">Malayalam (Romanized)</option>
+            </select>
+          </div>
+        </div>
+        <div class="api-status">
+          <div class="status-indicator" id="plant-id-status">🔍 Plant.id API: Checking...</div>
+          <div class="status-indicator" id="plantnet-status">📡 PlantNet API: Checking...</div>
+          <div class="status-indicator" id="perenual-status">🌿 Perenual API: Checking...</div>
+        </div>
+      </div>
+
+      <div class="chat-container">
+        <div class="messages" id="messages">
+          <div class="message system">
+            🌟 Welcome to AgriBot Pro! Powered by advanced AI for Indian farmers. Select your region and language, then:<br>
+            • Upload plant images for disease analysis<br>
+            • Ask about crops, diseases, or farming practices<br>
+            • Get region-specific advice
+          </div>
+          <div class="quick-actions">
+            <button class="quick-btn" onclick="sendQuickMessage('What crops are suitable for my region?')">🌾 Suitable Crops</button>
+            <button class="quick-btn" onclick="sendQuickMessage('Current weather conditions for farming')">🌤️ Weather Info</button>
+            <button class="quick-btn" onclick="sendQuickMessage('Common plant diseases in my area')">🦠 Disease Info</button>
+            <button class="quick-btn" onclick="sendQuickMessage('Best fertilizers for my crops')">🧪 Fertilizer Guide</button>
+            <button class="quick-btn" onclick="sendQuickMessage('Organic pest control methods')">🐛 Pest Control</button>
+          </div>
+        </div>
+
+        <div class="input-container">
+          <div class="input-group">
+            <textarea
+              id="messageInput"
+              class="message-input"
+              placeholder="Ask about plants, diseases, farming, or upload images..."
+              rows="1"
+              aria-label="Enter your question or upload an image"
+            ></textarea>
+            <button
+              class="image-upload"
+              onclick="document.getElementById('imageInput').click()"
+              title="Upload plant image for analysis"
+              aria-label="Upload plant image"
+            >
+              📷
+            </button>
+            <input
+              type="file"
+              id="imageInput"
+              accept="image/*"
+              class="hidden"
+              aria-hidden="true"
+            />
+          </div>
+          <button
+            class="send-btn"
+            id="sendBtn"
+            onclick="sendMessage()"
+            title="Send message"
+            aria-label="Send message"
+          >
+            ➤
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentRegion = "";
+      let currentLanguage = "english";
+      let uploadedImage = null;
+      let imageFile = null;
+      let isProcessing = false;
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", () => {
+        const regionSelect = document.getElementById("region");
+        const languageSelect = document.getElementById("language");
+        const messageInput = document.getElementById("messageInput");
+        const imageInput = document.getElementById("imageInput");
+        const sendBtn = document.getElementById("sendBtn");
+
+        regionSelect.addEventListener("change", (e) => {
+          currentRegion = e.target.value;
+          if (currentRegion) {
+            addMessage("system", `Region set to: ${e.target.options[e.target.selectedIndex].text}`);
+          }
+        });
+
+        languageSelect.addEventListener("change", (e) => {
+          currentLanguage = e.target.value;
+          addMessage("system", `Language set to: ${e.target.options[e.target.selectedIndex].text}`);
+        });
+
+        messageInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter" && !e.shiftKey && !isProcessing) {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+
+        messageInput.addEventListener("input", function () {
+          this.style.height = "auto";
+          this.style.height = Math.min(this.scrollHeight, 100) + "px";
+        });
+
+        imageInput.addEventListener("change", handleImageUpload);
+
+        checkAPIStatus();
+      });
+
+      function addMessage(type, content, image = null) {
+        const messagesContainer = document.getElementById("messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${type}`;
+        messageDiv.innerHTML = image ? `${content}<br><img src="${image}" class="image-preview" alt="Uploaded plant image">` : content;
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      function showTyping() {
+        const messagesContainer = document.getElementById("messages");
+        const typingDiv = document.createElement("div");
+        typingDiv.className = "message bot typing";
+        typingDiv.id = "typing-indicator";
+        typingDiv.innerHTML = `
+          <span>🤖 AI is analyzing...</span>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+        `;
+        messagesContainer.appendChild(typingDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      function hideTyping() {
+        const typingIndicator = document.getElementById("typing-indicator");
+        if (typingIndicator) typingIndicator.remove();
+      }
+
+      async function handleImageUpload(event) {
+        if (isProcessing) return;
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+          addMessage("error", "❌ File too large. Please select an image under 5MB.");
+          return;
+        }
+
+        if (!file.type.startsWith("image/")) {
+          addMessage("error", "❌ Please select a valid image file.");
+          return;
+        }
+
+        imageFile = file;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          uploadedImage = e.target.result;
+          addMessage("user", "📸 Image uploaded for AI analysis", uploadedImage);
+          await analyzeImage(file);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      async function analyzeImage(file) {
+        showTyping();
+        isProcessing = true;
+        document.getElementById("sendBtn").disabled = true;
+
+        try {
+          const base64Image = await fileToBase64(file);
+          const [plantResult, speciesResult] = await Promise.allSettled([
+            fetch("/api/identify-plant", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: base64Image, region: currentRegion }),
+            }).then((res) => res.json()),
+            fetch("/api/identify-species", {
+              method: "POST",
+              body: new FormData().append("image", file).append("region", currentRegion),
+            }).then((res) => res.json()),
+          ]);
+
+          let analysisResult;
+          if (plantResult.status === "fulfilled" && plantResult.value.success) {
+            analysisResult = plantResult.value;
+          } else if (speciesResult.status === "fulfilled" && speciesResult.value.success) {
+            analysisResult = speciesResult.value;
+          } else {
+            addMessage("error", "⚠️ API services unavailable. Using local analysis...");
+            const localResult = await fetch("/api/local-analysis", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ region: currentRegion }),
+            }).then((res) => res.json());
+            if (localResult.success) {
+              displayLocalAnalysis(localResult.data);
+            } else {
+              addMessage("error", "❌ Local analysis failed.");
+            }
+            return;
+          }
+
+          if (analysisResult.data.type === "health_assessment") {
+            displayHealthResult(analysisResult.data);
+          } else {
+            displaySpeciesResult(analysisResult.data);
+          }
+        } catch (error) {
+          addMessage("error", "❌ Error analyzing image. Please try again.");
+          console.error("Image analysis error:", error);
+        } finally {
+          hideTyping();
+          isProcessing = false;
+          document.getElementById("sendBtn").disabled = false;
+          uploadedImage = null;
+          imageFile = null;
+        }
+      }
+
+      function displayHealthResult(data) {
+        let response = `🔬 <strong>AI Plant Health Analysis</strong><br><br>`;
+        response += `<div class="analysis-result">`;
+        response += `<strong>🌿 Plant:</strong> ${data.plant_name}<br>`;
+        response += `<strong>🎯 Confidence:</strong><br>`;
+        response += `<div class="confidence-bar"><div class="confidence-fill" style="width: ${Math.round(data.probability * 100)}%">${Math.round(data.probability * 100)}%</div></div>`;
+
+        if (data.diseases && data.diseases.length > 0) {
+          response += `<br><strong>🦠 Detected Issues:</strong><br>`;
+          data.diseases.forEach((disease) => {
+            response += `• <strong>${disease.name}</strong> (${Math.round(disease.probability * 100)}% confidence)<br>`;
+            if (disease.disease_details) response += `  ${disease.disease_details.description}<br>`;
+          });
+          response += `<br><strong>💊 Treatment Recommendations:</strong><br>`;
+          response += `• Apply appropriate fungicide<br>• Improve air circulation<br>• Remove affected leaves<br>• Monitor plant closely<br>`;
+        } else {
+          response += `<br>✅ <strong>Plant appears healthy!</strong><br>`;
+        }
+        response += `</div>`;
+        addMessage("bot", response);
+      }
+
+      function displaySpeciesResult(data) {
+        let response = `🔍 <strong>Plant Identification Results</strong><br><br>`;
+        response += `<div class="analysis-result">`;
+        response += `<strong>🌱 Species:</strong> ${data.species.scientificNameWithoutAuthor}<br>`;
+        response += `<strong>🏷️ Common Name:</strong> ${data.species.commonNames ? data.species.commonNames[0] : "Not available"}<br>`;
+        response += `<strong>👨‍🔬 Scientific Name:</strong> ${data.species.scientificNameAuthorship}<br>`;
+        response += `<strong>🎯 Confidence:</strong><br>`;
+        response += `<div class="confidence-bar"><div class="confidence-fill" style="width: ${Math.round(data.score * 100)}%">${Math.round(data.score * 100)}%</div></div>`;
+        response += `</div>`;
+        addMessage("bot", response);
+      }
+
+      function displayLocalAnalysis(data) {
+        let response = `🔍 <strong>Local Analysis Results</strong><br><br>`;
+        response += `<div class="analysis-result">`;
+        response += `<strong>📋 Condition:</strong> ${data.condition}<br>`;
+        response += `<strong>🎯 Confidence:</strong><br>`;
+        response += `<div class="confidence-bar"><div class="confidence-fill" style="width: ${data.confidence}%">${data.confidence}%</div></div>`;
+        response += `<br><strong>👁️ Symptoms:</strong> ${data.symptoms}<br>`;
+        response += `<strong>💊 Treatment:</strong> ${data.treatment}<br>`;
+        response += `<strong>🛡️ Prevention:</strong> ${data.prevention}`;
+        response += `</div>`;
+        addMessage("bot", response);
+      }
+
+      async function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result.split(",")[1]);
+          reader.onerror = reject;
+        });
+      }
+
+      function sendQuickMessage(message) {
+        if (isProcessing) return;
+        document.getElementById("messageInput").value = message;
+        sendMessage();
+      }
+
+      async function sendMessage() {
+        if (isProcessing) return;
+        const messageInput = document.getElementById("messageInput");
+        const message = messageInput.value.trim();
+
+        if (!message && !uploadedImage) return;
+
+        if (!currentRegion && message) {
+          addMessage("system", "⚠️ Please select your region first.");
+          return;
+        }
+
+        isProcessing = true;
+        document.getElementById("sendBtn").disabled = true;
+
+        if (message) {
+          addMessage("user", message);
+          messageInput.value = "";
+          messageInput.style.height = "auto";
+        }
+
+        showTyping();
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, region: currentRegion, language: currentLanguage }),
+          }).then((res) => res.json());
+
+          if (response.success) {
+            addMessage("bot", response.response);
+          } else {
+            addMessage("error", "❌ Error processing request. Please try again.");
+          }
+        } catch (error) {
+          addMessage("error", "❌ Error processing request. Please try again.");
+          console.error("Chat error:", error);
+        } finally {
+          hideTyping();
+          isProcessing = false;
+          document.getElementById("sendBtn").disabled = false;
+        }
+      }
+
+      async function checkAPIStatus() {
+        try {
+          const response = await fetch("/api/check-status").then((res) => res.json());
+          response.forEach(({ id, name, status }) => {
+            const element = document.getElementById(id);
+            element.textContent = `🔍 ${name}: ${status}`;
+            element.classList.remove("status-online", "status-offline");
+            element.classList.add(status === "Active" ? "status-online" : "status-offline");
+          });
+        } catch (error) {
+          console.error("API status check failed:", error);
+        }
+      }
+    </script>
+  </body>
+</html>
