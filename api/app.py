@@ -79,7 +79,7 @@ class LLMClient:
 
 app = Flask(__name__, template_folder="../templates")
 app.config['UPLOAD_FOLDER'] = '/tmp/Uploads'
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Reduced to 5MB for Vercel
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB for Vercel
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 PLANT_ID_API_KEY = os.getenv("PLANT_ID_API_KEY")
