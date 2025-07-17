@@ -1,466 +1,908 @@
-import os
-import base64
-import requests
-import json
-import logging
-from flask import Flask, request, render_template, jsonify
-from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
-from PIL import Image
-import io
-import time
-import markdown
-import bleach
-from functools import lru_cache
-
-load_dotenv()
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-class LLMClient:
-    def __init__(self):
-        self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.site_url = os.getenv("SITE_URL", "http://localhost:5000")
-        self.site_name = os.getenv("SITE_NAME", "AgriBot")
-        self.model = "deepseek/deepseek-chat-v3-0324:free"
-        if not self.api_key:
-            logging.warning("OPENROUTER_API_KEY not found, using fallback decision logic")
-
-    def query(self, messages, max_tokens=300, temperature=0.5):
-        if not self.api_key:
-            return {"error": "OpenRouter API key is missing or invalid.", "model": "none"}
-        
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "HTTP-Referer": self.site_url,
-            "X-Title": self.site_name,
-            "Content-Type": "application/json"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        for attempt in range(3):
-            try:
-                response = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers=headers,
-                    data=json.dumps({
-                        "model": self.model,
-                        "messages": messages,
-                        "max_tokens": max_tokens,
-                        "temperature": temperature
-                    }),
-                    timeout=10
-                )
-                response.raise_for_status()
-                data = response.json()
-                if 'choices' not in data:
-                    return {"error": "Invalid response from OpenRouter API", "model": "none"}
-                selected_model = data.get('model', 'deepseek/deepseek-chat-v3-0324:free')
-                logging.info(f"OpenRouter selected model: {selected_model}")
-                return {"content": data['choices'][0]['message']['content'].strip(), "model": selected_model}
-            except requests.exceptions.HTTPError as e:
-                if e.response.status_code in (429, 401, 402, 404):
-                    if e.response.status_code == 401:
-                        logging.error("Invalid OpenRouter API key")
-                        return {"error": "Invalid OpenRouter API key. Please contact support.", "model": "none"}
-                    if e.response.status_code == 402:
-                        logging.error("OpenRouter API payment required")
-                        return {"error": "Payment required for OpenRouter API. Using fallback response.", "model": "none"}
-                    if e.response.status_code == 404:
-                        logging.error(f"OpenRouter API endpoint not found for model: {self.model}")
-                        return {"error": f"OpenRouter API endpoint not found. Check model ({self.model}) or API status.", "model": "none"}
-                    logging.warning(f"Rate limit hit, retrying in {(2 ** attempt) + (attempt * 0.5)} seconds")
-                    time.sleep((2 ** attempt) + (attempt * 0.5))
-                    continue
-                logging.error(f"OpenRouter API query failed: {str(e)}")
-                return {"error": f"OpenRouter API query failed: {str(e)}", "model": "none"}
-            except Exception as e:
-                logging.error(f"OpenRouter API query failed: {str(e)}")
-                return {"error": f"OpenRouter API query failed: {str(e)}", "model": "none"}
-        return {"error": "Rate limit exceeded. Please try again later.", "model": "none"}
 
-app = Flask(__name__, template_folder="../templates")
-app.config['UPLOAD_FOLDER'] = '/tmp/Uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-bg: #0f172a;
+            --dark-surface: #1e293b;
+            --dark-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
 
-PLANT_ID_API_KEY = os.getenv("PLANT_ID_API_KEY")
-PERENUAL_API_KEY = os.getenv("PERENUAL_API_KEY")
-llm_client = LLMClient()
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
 
-user_prefs = {"region": None, "language": "en"}
-remedy_cache = {}
-identification_cache = {}
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
 
-ALLOWED_TAGS = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'strong', 'em', 'br', 'div', 'span']
-ALLOWED_ATTRIBUTES = {'a': ['href'], 'img': ['src', 'alt']}
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
 
-def format_text_for_display(text):
-    import re
-    emoji_pattern = re.compile("["
-                               u"\U0001F600-\U0001F64F"
-                               u"\U0001F300-\U0001F5FF"
-                               u"\U0001F680-\U0001F6FF"
-                               u"\U0001F1E0-\U0001F1FF"
-                               u"\U00002700-\U000027BF"
-                               u"\U0001F926-\U0001F937"
-                               u"\U00010000-\U0010FFFF"
-                               u"\u2640-\u2642"
-                               u"\u2600-\u2B55"
-                               u"\u200D"
-                               u"\u23CF"
-                               u"\u23E9"
-                               u"\u231A"
-                               u"\uFE0F"
-                               u"\u3030"
-                               "]+", flags=re.UNICODE)
-    text = emoji_pattern.sub('', text)
-    return convert_markdown_to_html(text)
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
 
-def convert_markdown_to_html(text):
-    html = markdown.markdown(text, extensions=['extra'])
-    return bleach.clean(html, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
 
-def process_image(file):
-    try:
-        img = Image.open(file)
-        img.verify()
-        img = Image.open(file)
-        img = img.convert('RGB')
-        img = img.resize((800, 600), Image.Resampling.LANCZOS)
-        buffer = io.BytesIO()
-        img.save(buffer, format='JPEG', quality=95)
-        return base64.b64encode(buffer.getvalue()).decode("utf-8")
-    except Exception as e:
-        logging.error(f"Image processing failed: {str(e)}")
-        return None
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
 
-def translate_text(text, source_lang, target_lang):
-    if source_lang == target_lang or target_lang == "en":
-        return text
-    system_prompt = f"""
-    You are a professional translator. Translate the following text from {source_lang} to {target_lang} accurately, preserving tone and context. Format your response using clean markdown with proper headers (##), bullet points (-), and paragraph breaks for clarity. Ensure the translation is conversational, natural, and well-structured. Do not use emojis or special characters. Return only the translated text.
-    """
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": text}
-    ]
-    data = llm_client.query(messages, max_tokens=1000, temperature=0.3)
-    if 'error' in data:
-        logging.error(f"Translation failed: {data['error']}")
-        return text
-    return data['content']
+        .theme-toggle:hover {
+            background: var(--glass-border);
+            transform: scale(1.1);
+        }
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+        .preferences-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
 
-@app.route('/set_prefs', methods=['POST'])
-def set_prefs():
-    user_prefs['region'] = request.form['region'].strip()
-    user_prefs['language'] = request.form['language']
-    logging.info(f"User preferences set: region={user_prefs['region']}, language={user_prefs['language']}")
-    return jsonify({"status": "success"})
+        .preferences-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
 
-@app.route('/chat', methods=['POST'])
-def chat():
-    query = request.form['query'].strip()
-    if not query:
-        error_msg = "No query provided. Please try again."
-        return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
-    
-    query_en = translate_text(query, user_prefs['language'], "en") if user_prefs['language'] != "en" else query
-    logging.info(f"Translated query to English: {query_en}")
-    
-    system_prompt = f"""
-    You are AgriBot, an AI assistant for Indian agriculture. Provide clear, concise, and actionable advice for {user_prefs['region'] or 'India'} in English. Consider local weather, cultural practices, and locally available remedies. 
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
 
-    Format your response using clean markdown:
-    - Use ## for main headings
-    - Use ### for subheadings
-    - Use - for bullet points
-    - Use **bold** for emphasis
-    - Use proper paragraph breaks
-    - Be conversational and friendly
-    - Do not use emojis or special characters
+        .input-group label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
 
-    Include detailed advice on soil management, pest control, or irrigation specific to the region.
-    """
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": query_en}
-    ]
-    
-    data = llm_client.query(messages, max_tokens=1000, temperature=0.5)
-    
-    if 'error' in data:
-        error_msg = data['error']
-        if "Payment required" in error_msg:
-            fallback_response = f"""
-## Unable to Process Query
-Due to API limitations, we cannot process your query right now. Please try the following:
-- Upload an image for plant identification and disease assessment.
-- Check your internet connection and try again.
-- Contact local agricultural extension services in {user_prefs['region'] or 'India'} for assistance.
-            """
-            return jsonify({
-                "response": format_text_for_display(translate_text(fallback_response, "en", user_prefs['language'])),
-                "model": "none",
-                "typing_effect": True
-            })
-        return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 429
-    
-    response_text = translate_text(data['content'], "en", user_prefs['language'])
-    formatted_response = format_text_for_display(response_text)
-    
-    logging.info(f"Formatted response for {user_prefs['language']}")
-    return jsonify({
-        "response": formatted_response,
-        "model": data['model'],
-        "typing_effect": True
-    })
+        .input-field {
+            background: var(--dark-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
 
-@lru_cache(maxsize=100)
-def get_region_specific_remedy(plant_name, scientific_name, disease_name, region, language, plant_id_remedy, disease_description):
-    system_prompt = f"""
-    You are AgriBot, an AI assistant for Indian agriculture. Plant.id identified the plant as '{plant_name}' (scientific name: {scientific_name}) with disease '{disease_name}'. Plant.id remedy: '{plant_id_remedy}' and disease description: '{disease_description}'. 
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
 
-    Provide a clear, actionable remedy for {disease_name} in {plant_name} for {region or 'India'} in English. 
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
 
-    Format your response using clean markdown:
-    - Use ## for main sections like "Treatment" or "Prevention"
-    - Use ### for subsections
-    - Use - for bullet points
-    - Use **bold** for important points
-    - Use proper paragraph breaks
-    - Do not use emojis or special characters
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
 
-    Consider local weather, cultural practices, and locally available remedies. Include preventive measures and follow-up advice.
-    """
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Provide a remedy for {disease_name} in {plant_name} in {region or 'India'}."}
-    ]
-    data = llm_client.query(messages, max_tokens=1000, temperature=0.5)
-    if 'error' in data or 'content' not in data:
-        fallback = f"""
-## Treatment
-{plant_id_remedy}
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
 
-## Note
-For {region or 'India'}, consult local agricultural extension services for region-specific advice due to API limitations.
-        """
-        return translate_text(fallback, "en", language), 'none'
-    return translate_text(data['content'], "en", language), data['model']
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
 
-@lru_cache(maxsize=100)
-def enhance_identification(plant_name, scientific_name, plant_confidence, disease_name, disease_confidence, region, language, disease_description):
-    if plant_confidence < 0.3 or disease_name in ['Fungi', 'Abiotic']:
-        system_prompt = f"""
-        You are AgriBot, an AI assistant for Indian agriculture. Plant.id identified the plant as '{plant_name}' (scientific name: {scientific_name}) with {plant_confidence:.2%} confidence and disease '{disease_name}' with {disease_confidence:.2%} confidence, description: '{disease_description}'. 
+        .chat-area {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: 500px;
+            scroll-behavior: smooth;
+        }
 
-        Refine the plant and disease identification for {region or 'India'} in English, suggesting a more likely plant and specific disease based on regional prevalence, climate, and symptoms. 
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
 
-        Return the response in JSON format: {{"plant": "...", "scientific_name": "...", "disease": "..."}}.
-        """
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Refine the identification of {plant_name} and {disease_name} in {region or 'India'}."}
-        ]
-        data = llm_client.query(messages, max_tokens=500, temperature=0.3)
-        if 'error' in data or 'content' not in data:
-            return plant_name, scientific_name, plant_confidence, disease_name, disease_confidence
-        try:
-            refined = json.loads(data['content']) if data['content'].startswith('{') else {
-                "plant": plant_name, "scientific_name": scientific_name, "disease": disease_name
+        .chat-area::-webkit-scrollbar-track {
+            background: var(--dark-surface);
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: var(--secondary-gradient);
+        }
+
+        .message.bot .message-avatar {
+            background: var(--success-gradient);
+        }
+
+        .message.error .message-avatar {
+            background: var(--error);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: var(--primary-gradient);
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .message.bot .message-content {
+            background: var(--dark-surface);
+            color: var(--text-primary);
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .message.error .message-content {
+            background: var(--error);
+            color: white;
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .input-panel {
+            padding: 1.5rem;
+            background: var(--dark-surface);
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .input-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            background: var(--dark-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-container:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: none;
+            min-height: 20px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .message-input:focus {
+            outline: none;
+        }
+
+        .message-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .upload-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-btn:hover {
+            background: var(--glass-border);
+            transform: scale(1.1);
+        }
+
+        .upload-btn input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .send-btn {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 0.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .image-preview {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            max-width: 100px;
+            max-height: 100px;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-item .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            padding: 1rem;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .welcome-message h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .quick-action {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .quick-action:hover {
+            background: var(--glass-border);
+            transform: translateY(-2px);
+        }
+
+        /* Light theme */
+        .light-theme {
+            --dark-bg: #f8fafc;
+            --dark-surface: #ffffff;
+            --dark-hover: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+
+        .light-theme body::before {
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
             }
-            return (
-                refined.get('plant', plant_name),
-                refined.get('scientific_name', scientific_name),
-                max(plant_confidence, 0.5),
-                refined.get('disease', disease_name),
-                max(disease_confidence, 0.5)
-            )
-        except json.JSONDecodeError:
-            logging.error("Failed to parse OpenRouter JSON response for identification refinement")
-            return plant_name, scientific_name, plant_confidence, disease_name, disease_confidence
-    return plant_name, scientific_name, plant_confidence, disease_name, disease_confidence
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-@lru_cache(maxsize=100)
-def perenual_validation(plant_name, region):
-    if not PERENUAL_API_KEY:
-        logging.warning("PERENUAL_API_KEY not found, skipping validation")
-        return plant_name, "", 0.0
-    try:
-        response = requests.get(
-            f"https://perenual.com/api/species-list?key={PERENUAL_API_KEY}&q={plant_name}",
-            timeout=5
-        )
-        response.raise_for_status()
-        data = response.json()
-        if not data.get('data'):
-            return plant_name, "", 0.0
-        for plant in data['data']:
-            if plant_name.lower() in plant.get('common_name', '').lower():
-                return plant['common_name'], plant.get('scientific_name', [''])[0], 0.8
-        return plant_name, "", 0.0
-    except requests.RequestException as e:
-        logging.error(f"Perenual API query failed: {str(e)}")
-        return plant_name, "", 0.0
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    if 'image' not in request.files:
-        error_msg = "No image uploaded."
-        return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
-    
-    files = request.files.getlist('image')
-    if not files or len(files) > 3:
-        error_msg = "Please upload 1-3 images (PNG, JPG, JPEG)."
-        return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
-    
-    encoded_images = []
-    for file in files:
-        if not file.filename or not allowed_file(file.filename):
-            error_msg = f"Invalid file type for {file.filename}. Please upload PNG, JPG, or JPEG."
-            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
-        encoded = process_image(file)
-        if not encoded:
-            error_msg = f"Failed to process image {file.filename}."
-            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
-        encoded_images.append(encoded)
+        @media (max-width: 768px) {
+            .preferences-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-seedling"></i>
+                AgriBot
+            </h1>
+            <p>Your intelligent agricultural companion for crop management and disease detection</p>
+            <div class="theme-toggle" id="theme-toggle">
+                <i class="fas fa-sun" id="theme-icon"></i>
+            </div>
+        </div>
 
-    try:
-        plant_id_response = requests.post(
-            "https://api.plant.id/v2/identify",
-            headers={"Content-Type": "application/json", "Api-Key": PLANT_ID_API_KEY},
-            json={
-                "images": encoded_images,
-                "modifiers": ["similar_images", "crops_fast"],
-                "plant_language": "en",
-                "plant_details": ["common_names", "url", "wiki_description", "taxonomy", "edible_parts"]
-            },
-            timeout=10
-        )
-        plant_id_response.raise_for_status()
-        plant_data = plant_id_response.json()
-        if not plant_data.get('suggestions'):
-            error_msg = "Plant identification failed."
-            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
-        suggestion = plant_data['suggestions'][0]
-        plant_name = suggestion['plant_details']['common_names'][0] if suggestion['plant_details']['common_names'] else suggestion['plant_name'] or "Unknown plant"
-        scientific_name = suggestion['plant_details'].get('scientific_name', 'Unknown scientific name')
-        plant_confidence = suggestion['probability']
+        <div class="preferences-panel">
+            <div class="preferences-grid">
+                <div class="input-group">
+                    <label for="region">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Region
+                    </label>
+                    <input type="text" id="region" class="input-field" placeholder="e.g., Punjab, India" value="India">
+                </div>
+                
+                <div class="input-group">
+                    <label for="language">
+                        <i class="fas fa-language"></i>
+                        Language
+                    </label>
+                    <select id="language" class="input-field">
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी (Hindi)</option>
+                        <option value="ta">தமிழ் (Tamil)</option>
+                        <option value="bn">বাংলা (Bengali)</option>
+                        <option value="te">తెలుగు (Telugu)</option>
+                        <option value="gu">ગુજરાતી (Gujarati)</option>
+                        <option value="mr">मराठी (Marathi)</option>
+                        <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                        <option value="or">ଓଡ଼ିଆ (Odia)</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary" onclick="setPreferences()">
+                    <i class="fas fa-check"></i>
+                    Set Preferences
+                </button>
+            </div>
+        </div>
 
-        if plant_confidence < 0.3 and PERENUAL_API_KEY:
-            plant_name, scientific_name, perenual_confidence = perenual_validation(plant_name, user_prefs['region'])
-            plant_confidence = max(plant_confidence, perenual_confidence)
+        <div class="chat-container">
+            <div class="chat-area" id="chat-area">
+                <div class="welcome-message">
+                    <h3>Welcome to AgriBot! 🌾</h3>
+                    <p>I'm here to help you with:</p>
+                    <div class="quick-actions">
+                        <div class="quick-action" onclick="sendQuickMessage('What crops are suitable for my region?')">
+                            <i class="fas fa-seedling"></i> Crop Recommendations
+                        </div>
+                        <div class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')">
+                            <i class="fas fa-cloud-sun"></i> Weather Info
+                        </div>
+                        <div class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')">
+                            <i class="fas fa-shield-alt"></i> Disease Prevention
+                        </div>
+                        <div class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')">
+                            <i class="fas fa-leaf"></i> Fertilizer Guide
+                        </div>
+                    </div>
+                    <p style="margin-top: 1rem; font-size: 0.9rem;">
+                        You can also upload plant images for disease detection!
+                    </p>
+                </div>
+            </div>
 
-        disease_resp = requests.post(
-            "https://api.plant.id/v2/health_assessment",
-            headers={"Content-Type": "application/json", "Api-Key": PLANT_ID_API_KEY},
-            json={
-                "images": encoded_images,
-                "disease_details": ["common_names", "url", "description", "treatment"]
-            },
-            timeout=10
-        )
-        disease_resp.raise_for_status()
-        disease_data = disease_resp.json()
-        if not disease_data.get('health_assessment'):
-            error_msg = "Disease assessment failed."
-            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
+            <div class="input-panel">
+                <div class="image-preview" id="image-preview"></div>
+                <div class="input-container">
+                    <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases, or farming techniques..." rows="1"></textarea>
+                    <div class="input-actions">
+                        <label class="upload-btn" title="Upload plant images">
+                            <i class="fas fa-camera"></i>
+                            <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
+                        </label>
+                        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send message">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        if disease_data['health_assessment']['is_healthy']:
-            disease_name = "Healthy"
-            remedy = f"""
-## Plant Health Status
-Your plant appears to be in good health. Here are some care recommendations to maintain its vitality:
+    <script>
+        // Global variables
+        let isLightTheme = false;
+        let uploadedImages = [];
+        let isProcessing = false;
+        let currentRegion = 'India';
+        let currentLanguage = 'en';
 
-### Watering Guidelines
-- Maintain consistent watering schedule
-- Avoid waterlogging and overwatering
-- Adjust watering frequency based on {user_prefs['region'] or 'local'} climate conditions
+        // DOM elements
+        const chatArea = document.getElementById('chat-area');
+        const messageInput = document.getElementById('message-input');
+        const imageInput = document.getElementById('image-input');
+        const imagePreview = document.getElementById('image-preview');
+        const sendBtn = document.getElementById('send-btn');
+        const regionInput = document.getElementById('region');
+        const languageSelect = document.getElementById('language');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
 
-### Environmental Care
-- Ensure adequate sunlight as per plant requirements
-- Provide proper ventilation
-- Monitor temperature changes
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auto-resize textarea
+            messageInput.addEventListener('input', autoResize);
+            
+            // Handle Enter key
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
 
-### Maintenance
-- Regular pruning: Remove dead or yellowing leaves
-- Soil health: Use organic compost periodically
-- pH monitoring: Check soil pH levels monthly
+            // Handle image upload
+            imageInput.addEventListener('change', handleImageUpload);
+            
+            // Theme toggle
+            themeToggle.addEventListener('click', toggleTheme);
 
-### Regional Considerations
-For {user_prefs['region'] or 'India'}, consider seasonal variations like monsoon and dry periods when planning your care routine.
-            """
-            disease_confidence = disease_data['health_assessment']['is_healthy_probability']
-            selected_model = 'none'
-        else:
-            issue = disease_data['health_assessment']['diseases'][0]
-            disease_name = issue['name']
-            disease_confidence = issue['probability']
-            disease_description = issue.get('disease_details', {}).get('description', 'No description available')
-            treatment_info = issue.get('disease_details', {}).get('treatment', {})
-            biological = treatment_info.get('biological', ['No biological treatment available'])[0]
-            chemical = treatment_info.get('chemical', ['No chemical treatment available'])[0]
-            remedy = f"""
-## Treatment Options
-### Organic Treatment
-{biological}
+            // Set default preferences
+            setPreferences();
+        });
 
-### Chemical Treatment
-{chemical}
+        // Auto-resize textarea
+        function autoResize() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = messageInput.scrollHeight + 'px';
+        }
 
-### Important Notes
-- Always follow safety guidelines when applying treatments
-- Consider environmental impact of chemical treatments
-- Monitor plant response after treatment
-            """
+        // Theme toggle
+        function toggleTheme() {
+            isLightTheme = !isLightTheme;
+            document.body.classList.toggle('light-theme', isLightTheme);
+            themeIcon.className = isLightTheme ? 'fas fa-moon' : 'fas fa-sun';
+        }
 
-        cache_key_id = f"{plant_name}:{scientific_name}:{disease_name}:{user_prefs['region']}:{user_prefs['language']}"
-        if cache_key_id in identification_cache:
-            plant_name, scientific_name, plant_confidence, disease_name, disease_confidence = identification_cache[cache_key_id]
-        else:
-            plant_name, scientific_name, plant_confidence, disease_name, disease_confidence = enhance_identification(
-                plant_name, scientific_name, plant_confidence, disease_name, disease_confidence, 
-                user_prefs['region'], user_prefs['language'], disease_description
-            )
-            identification_cache[cache_key_id] = (plant_name, scientific_name, plant_confidence, disease_name, disease_confidence)
+        // Set preferences
+        async function setPreferences() {
+            const region = regionInput.value.trim() || 'India';
+            const language = languageSelect.value;
+            
+            currentRegion = region;
+            currentLanguage = language;
+            
+            const formData = new FormData();
+            formData.append('region', region);
+            formData.append('language', language);
+            
+            try {
+                const res = await fetch('/set_prefs', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!res.ok) throw new Error('Failed to set preferences');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    addMessage('user', `Preferences updated: Region - ${region}, Language - ${getLanguageName(language)}`);
+                    addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`);
+                }
+            } catch (error) {
+                addMessage('error', `Error setting preferences: ${error.message}`);
+            }
+        }
 
-        cache_key_remedy = f"{plant_name}:{scientific_name}:{disease_name}:{user_prefs['region']}:{user_prefs['language']}"
-        if cache_key_remedy in remedy_cache:
-            remedy = remedy_cache[cache_key_remedy]
-            selected_model = 'cached'
-        else:
-            enhanced_remedy, selected_model = get_region_specific_remedy(
-                plant_name, scientific_name, disease_name, user_prefs['region'], user_prefs['language'], remedy, disease_description
-            )
-            if enhanced_remedy:
-                remedy = enhanced_remedy
-                remedy_cache[cache_key_remedy] = remedy
-            else:
-                remedy += f"\n\n## Note\nFor {user_prefs['region'] or 'India'}, consult local agricultural extension services for region-specific advice."
-                selected_model = 'none'
+        // Get language name
+        function getLanguageName(code) {
+            const languages = {
+                'en': 'English',
+                'hi': 'Hindi',
+                'ta': 'Tamil',
+                'bn': 'Bengali',
+                'te': 'Telugu',
+                'gu': 'Gujarati',
+                'mr': 'Marathi',
+                'pa': 'Punjabi',
+                'or': 'Odia'
+            };
+            return languages[code] || 'English';
+        }
 
-        formatted_remedy = format_text_for_display(remedy)
+        // Handle image upload
+        function handleImageUpload(e) {
+            const files = Array.from(e.target.files);
+            
+            if (files.length > 3) {
+                alert('Please upload a maximum of 3 images.');
+                imageInput.value = '';
+                imagePreview.innerHTML = '';
+                return;
+            }
+            
+            uploadedImages = [];
+            imagePreview.innerHTML = '';
+            
+            files.forEach((file, index) => {
+                if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+                    uploadedImages.push(file);
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.innerHTML = `
+                            <img src="${e.target.result}" alt="Preview">
+                            <button class="remove-btn" onclick="removeImage(${index})">×</button>
+                        `;
+                        imagePreview.appendChild(previewItem);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert(`Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
+                }
+            });
+        }
 
-        return jsonify({
-            "plant": translate_text(plant_name, "en", user_prefs['language']),
-            "scientific_name": translate_text(scientific_name, "en", user_prefs['language']),
-            "plant_confidence": f"{plant_confidence:.2%}",
-            "disease": translate_text(disease_name, "en", user_prefs['language']),
-            "disease_confidence": f"{disease_confidence:.2%}",
-            "remedy": formatted_remedy,
-            "model": selected_model,
-            "typing_effect": True
-        })
-    except (IOError, requests.RequestException) as e:
-        error_msg = f"Failed to process image or connect to API: {str(e)}"
-        return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 500
+        // Remove image
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            imagePreview.children[index].remove();
+            if (uploadedImages.length === 0) {
+                imageInput.value = '';
+            }
+        }
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+        // Send quick message
+        function sendQuickMessage(message) {
+            messageInput.value = message;
+            sendMessage();
+        }
+
+        // Send message
+        async function sendMessage() {
+            if (isProcessing) return;
+            
+            const message = messageInput.value.trim();
+            const hasImages = uploadedImages.length > 0;
+            
+            if (!message && !hasImages) {
+                messageInput.focus();
+                return;
+            }
+            
+            isProcessing = true;
+            sendBtn.disabled = true;
+            
+            // Clear welcome message
+            const welcomeMessage = document.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+            
+            // Add user message
+            if (message) {
+                addMessage('user', message);
+            }
+            
+            if (hasImages) {
+                addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
+            }
+            
+            // Show loading
+            const loadingId = addMessage('bot', '', true);
+            
+            // Prepare form data
+            const formData = new FormData();
+            if (message) {
+                formData.append('query', message);
+            }
+            uploadedImages.forEach((file) => {
+                formData.append('image', file);
+            });
+            
+            try {
+                const endpoint = hasImages ? '/upload' : '/chat';
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                removeMessage(loadingId);
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                
+                if (data.error) {
+                    addMessage('error', data.error);
+                } else if (hasImages) {
+                    const response = `
+                        <div style="margin-bottom: 1rem;">
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
+                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                                <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
+                                <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
+                                <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
+                            </div>
+                            <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
+                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
+                                ${data.remedy}
+                            </div>
+                        </div>
+                    `;
+                    addMessage('bot', response);
+                } else {
+                    addMessage('bot', data.response);
+                }
+            } catch (error) {
+                removeMessage(loadingId);
+                addMessage('error', `Error: Failed to connect to server: ${error.message}`);
+            }
+            
+            // Clear inputs
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            uploadedImages = [];
+            imagePreview.innerHTML = '';
+            imageInput.value = '';
+            isProcessing = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
+
+        // Add message to chat
+        function addMessage(type, content, isLoading = false) {
+            const messageId = Date.now();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.id = `message-${messageId}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            
+            if (type === 'user') {
+                avatar.innerHTML = '<i class="fas fa-user"></i>';
+            } else if (type === 'bot') {
+                avatar.innerHTML = '<i class="fas fa-robot"></i>';
+            } else if (type === 'error') {
+                avatar.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            }
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (isLoading) {
+                messageContent.innerHTML = `
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <span>Processing...</span>
+                    </div>
+                `;
+            } else {
+                messageContent.innerHTML = content;
+                
+                const time = document.createElement('div');
+                time.className = 'message-time';
+                time.textContent = new Date().toLocaleTimeString();
+                messageContent.appendChild(time);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            return messageId;
+        }
+
+        // Remove message
+        function removeMessage(messageId) {
+            const message = document.getElementById(`message-${messageId}`);
+            if (message) {
+                message.remove();
+            }
+        }
+    </script>
+</body>
+</html>
