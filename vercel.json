@@ -1,12 +1,6 @@
 {
   "version": 2,
   "framework": null,
-  "functions": {
-    "api/app.py": {
-      "maxDuration": 10,
-      "memory": 256
-    }
-  },
   "routes": [
     {
       "src": "/static/(.*)",
@@ -22,7 +16,9 @@
       "src": "/api/app.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "15mb"
+        "maxLambdaSize": "15mb",
+        "maxDuration": 10,
+        "memory": 256
       }
     },
     {
