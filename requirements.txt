@@ -5,4 +5,4 @@ pillow==10.4.0
 python-dotenv==1.0.1
 markdown==3.7
 bleach==6.1.0
-upstash_redis==0.16.0
+upstash_redis==1.4.0
