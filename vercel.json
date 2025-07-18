@@ -1,14 +1,9 @@
 {
-       "builds": [
-           {
-               "src": "api/app.py",
-               "use": "@vercel/python"
-           }
-       ],
-       "routes": [
-           {
-               "src": "/(.*)",
-               "dest": "api/app.py"
-           }
-       ]
-   }
+    "framework": "flask",
+    "rewrites": [
+        { "source": "/static/(.*)", "destination": "/static/$1" },
+        { "source": "/(.*)", "destination": "/api/app.py" }
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
+}
