@@ -11,7 +11,7 @@ import io
 import time
 import markdown
 import bleach
-from upstash_redis.asyncio import Redis
+from upstash_redis import Redis  # Use sync Redis client
 from hashlib import md5
 import asyncio
 
@@ -24,7 +24,7 @@ app.config['UPLOAD_FOLDER'] = '/tmp/Uploads'
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB for Vercel
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize Upstash Redis client
+# Initialize Upstash Redis client (synchronous)
 redis_client = Redis(
     url=os.getenv("UPSTASH_REDIS_REST_URL"),
     token=os.getenv("UPSTASH_REDIS_REST_TOKEN")
@@ -47,9 +47,9 @@ class LLMClient:
         if not self.api_key:
             logging.warning("OPENROUTER_API_KEY not found, using fallback decision logic")
 
-    async def query(self, messages, max_tokens=300, temperature=0.5):
+    def query(self, messages, max_tokens=300, temperature=0.5):
         cache_key = f"llm:{md5(json.dumps(messages).encode()).hexdigest()}"
-        cached_response = await redis_client.get(cache_key)
+        cached_response = redis_client.get(cache_key)
         if cached_response:
             logging.info("Returning cached LLM response")
             return json.loads(cached_response.decode())
@@ -83,7 +83,7 @@ class LLMClient:
                 selected_model = data.get('model', 'deepseek/deepseek-chat-v3-0324:free')
                 logging.info(f"OpenRouter selected model: {selected_model}")
                 result = {"content": data['choices'][0]['message']['content'].strip(), "model": selected_model}
-                await redis_client.set(cache_key, json.dumps(result), ex=30)  # Cache for 30 seconds
+                redis_client.set(cache_key, json.dumps(result), ex=30)  # Cache for 30 seconds
                 return result
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code in (429, 401, 402, 404):
@@ -97,7 +97,7 @@ class LLMClient:
                         logging.error(f"OpenRouter API endpoint not found for model: {self.model}")
                         return {"error": f"OpenRouter API endpoint not found. Check model ({self.model}) or API status.", "model": "none"}
                     logging.warning(f"Rate limit hit, retrying in {(2 ** attempt) + (attempt * 0.5)} seconds")
-                    await asyncio.sleep((2 ** attempt) + (attempt * 0.5))
+                    time.sleep((2 ** attempt) + (attempt * 0.5))
                     continue
                 logging.error(f"OpenRouter API query failed: {str(e)}")
                 return {"error": f"OpenRouter API query failed: {str(e)}", "model": "none"}
@@ -137,7 +137,7 @@ def convert_markdown_to_html(text):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg'}
 
-async def process_image(file):
+def process_image(file):
     try:
         img = Image.open(file)
         img.verify()
@@ -151,11 +151,11 @@ async def process_image(file):
         logging.error(f"Image processing failed: {str(e)}")
         return None
 
-async def translate_text(text, source_lang, target_lang):
+def translate_text(text, source_lang, target_lang):
     if source_lang == target_lang or target_lang == "en":
         return text
     cache_key = f"translate:{md5((text + source_lang + target_lang).encode()).hexdigest()}"
-    cached_translation = await redis_client.get(cache_key)
+    cached_translation = redis_client.get(cache_key)
     if cached_translation:
         logging.info("Returning cached translation")
         return cached_translation.decode()
@@ -167,12 +167,12 @@ async def translate_text(text, source_lang, target_lang):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": text}
     ]
-    data = await llm_client.query(messages, max_tokens=1000, temperature=0.3)
+    data = llm_client.query(messages, max_tokens=1000, temperature=0.3)
     if 'error' in data:
         logging.error(f"Translation failed: {data['error']}")
         return text
     translation = data['content']
-    await redis_client.set(cache_key, translation, ex=3600)  # Cache for 1 hour
+    redis_client.set(cache_key, translation, ex=3600)  # Cache for 1 hour
     return translation
 
 @app.errorhandler(Exception)
@@ -189,12 +189,12 @@ def index():
         return jsonify({"error": "Failed to load page. Please try again."}), 500
 
 @app.route('/set_prefs', methods=['POST'])
-async def set_prefs():
+def set_prefs():
     try:
         region = request.form['region'].strip()
         language = request.form['language']
         cache_key = f"prefs:{md5((region + language).encode()).hexdigest()}"
-        await redis_client.set(cache_key, f"{region}:{language}", ex=3600)  # Cache for 1 hour
+        redis_client.set(cache_key, f"{region}:{language}", ex=3600)  # Cache for 1 hour
         user_prefs['region'] = region
         user_prefs['language'] = language
         logging.info(f"User preferences set: region={region}, language={language}")
@@ -204,20 +204,20 @@ async def set_prefs():
         return jsonify({"error": f"Error setting preferences: {str(e)}. <a href='#' onclick='setPreferences()'>Retry</a>", "typing_effect": True}), 500
 
 @app.route('/chat', methods=['POST'])
-async def chat():
+def chat():
     try:
         query = request.form['query'].strip()
         if not query:
             error_msg = "No query provided. Please try again."
-            return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
+            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
         
         cache_key = f"chat:{md5(query.encode()).hexdigest()}"
-        cached_response = await redis_client.get(cache_key)
+        cached_response = redis_client.get(cache_key)
         if cached_response:
             logging.info("Returning cached chat response")
             return json.loads(cached_response.decode())
         
-        query_en = await translate_text(query, user_prefs['language'], "en") if user_prefs['language'] != "en" else query
+        query_en = translate_text(query, user_prefs['language'], "en") if user_prefs['language'] != "en" else query
         logging.info(f"Translated query to English: {query_en}")
         
         system_prompt = f"""
@@ -239,7 +239,7 @@ async def chat():
             {"role": "user", "content": query_en}
         ]
         
-        data = await llm_client.query(messages, max_tokens=1000, temperature=0.5)
+        data = llm_client.query(messages, max_tokens=1000, temperature=0.5)
         
         if 'error' in data:
             error_msg = data['error']
@@ -252,15 +252,15 @@ Due to API limitations, we cannot process your query right now. Please try the f
 - Contact local agricultural extension services in {user_prefs['region'] or 'India'} for assistance.
                 """
                 response = {
-                    "response": format_text_for_display(await translate_text(fallback_response, "en", user_prefs['language'])),
+                    "response": format_text_for_display(translate_text(fallback_response, "en", user_prefs['language'])),
                     "model": "none",
                     "typing_effect": True
                 }
-                await redis_client.set(cache_key, json.dumps(response), ex=30)  # Cache fallback for 30 seconds
+                redis_client.set(cache_key, json.dumps(response), ex=30)  # Cache fallback for 30 seconds
                 return jsonify(response)
-            return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 429
+            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 429
         
-        response_text = await translate_text(data['content'], "en", user_prefs['language'])
+        response_text = translate_text(data['content'], "en", user_prefs['language'])
         formatted_response = format_text_for_display(response_text)
         
         response = {
@@ -268,16 +268,16 @@ Due to API limitations, we cannot process your query right now. Please try the f
             "model": data['model'],
             "typing_effect": True
         }
-        await redis_client.set(cache_key, json.dumps(response), ex=30)  # Cache for 30 seconds
+        redis_client.set(cache_key, json.dumps(response), ex=30)  # Cache for 30 seconds
         logging.info(f"Formatted response for {user_prefs['language']}")
         return jsonify(response)
     except Exception as e:
         logging.error(f"Chat endpoint error: {str(e)}")
         return jsonify({"error": f"Chat error: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>", "typing_effect": True}), 500
 
-async def get_region_specific_remedy(plant_name, scientific_name, disease_name, region, language, plant_id_remedy, disease_description):
+def get_region_specific_remedy(plant_name, scientific_name, disease_name, region, language, plant_id_remedy, disease_description):
     cache_key = f"remedy:{md5((plant_name + scientific_name + disease_name + (region or '') + language).encode()).hexdigest()}"
-    cached_remedy = await redis_client.get(cache_key)
+    cached_remedy = redis_client.get(cache_key)
     if cached_remedy:
         logging.info("Returning cached remedy")
         return json.loads(cached_remedy.decode())
@@ -301,7 +301,7 @@ async def get_region_specific_remedy(plant_name, scientific_name, disease_name, 
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"Provide a remedy for {disease_name} in {plant_name} in {region or 'India'}."}
     ]
-    data = await llm_client.query(messages, max_tokens=1000, temperature=0.5)
+    data = llm_client.query(messages, max_tokens=1000, temperature=0.5)
     if 'error' in data or 'content' not in data:
         fallback = f"""
 ## Treatment
@@ -310,16 +310,16 @@ async def get_region_specific_remedy(plant_name, scientific_name, disease_name, 
 ## Note
 For {region or 'India'}, consult local agricultural extension services for region-specific advice due to API limitations.
         """
-        result = {"remedy": await translate_text(fallback, "en", language), "model": "none"}
-        await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+        result = {"remedy": translate_text(fallback, "en", language), "model": "none"}
+        redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
         return result
-    result = {"remedy": await translate_text(data['content'], "en", language), "model": data['model']}
-    await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+    result = {"remedy": translate_text(data['content'], "en", language), "model": data['model']}
+    redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
     return result
 
-async def enhance_identification(plant_name, scientific_name, plant_confidence, disease_name, disease_confidence, region, language, disease_description):
+def enhance_identification(plant_name, scientific_name, plant_confidence, disease_name, disease_confidence, region, language, disease_description):
     cache_key = f"identify:{md5((plant_name + scientific_name + disease_name + (region or '') + language).encode()).hexdigest()}"
-    cached_identification = await redis_client.get(cache_key)
+    cached_identification = redis_client.get(cache_key)
     if cached_identification:
         logging.info("Returning cached identification")
         return json.loads(cached_identification.decode())
@@ -336,7 +336,7 @@ async def enhance_identification(plant_name, scientific_name, plant_confidence, 
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Refine the identification of {plant_name} and {disease_name} in {region or 'India'}."}
         ]
-        data = await llm_client.query(messages, max_tokens=500, temperature=0.3)
+        data = llm_client.query(messages, max_tokens=500, temperature=0.3)
         if 'error' in data or 'content' not in data:
             result = {
                 "plant": plant_name,
@@ -345,7 +345,7 @@ async def enhance_identification(plant_name, scientific_name, plant_confidence, 
                 "disease": disease_name,
                 "disease_confidence": disease_confidence
             }
-            await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+            redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
             return result
         try:
             refined = json.loads(data['content']) if data['content'].startswith('{') else {
@@ -358,7 +358,7 @@ async def enhance_identification(plant_name, scientific_name, plant_confidence, 
                 "disease": refined.get('disease', disease_name),
                 "disease_confidence": max(disease_confidence, 0.5)
             }
-            await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+            redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
             return result
         except json.JSONDecodeError:
             logging.error("Failed to parse OpenRouter JSON response for identification refinement")
@@ -369,7 +369,7 @@ async def enhance_identification(plant_name, scientific_name, plant_confidence, 
                 "disease": disease_name,
                 "disease_confidence": disease_confidence
             }
-            await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+            redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
             return result
     result = {
         "plant": plant_name,
@@ -378,15 +378,15 @@ async def enhance_identification(plant_name, scientific_name, plant_confidence, 
         "disease": disease_name,
         "disease_confidence": disease_confidence
     }
-    await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+    redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
     return result
 
-async def perenual_validation(plant_name, region):
+def perenual_validation(plant_name, region):
     if not PERENUAL_API_KEY:
         logging.warning("PERENUAL_API_KEY not found, skipping validation")
         return plant_name, "", 0.0
     cache_key = f"perenual:{md5((plant_name + (region or '')).encode()).hexdigest()}"
-    cached_validation = await redis_client.get(cache_key)
+    cached_validation = redis_client.get(cache_key)
     if cached_validation:
         logging.info("Returning cached Perenual validation")
         return json.loads(cached_validation.decode())
@@ -400,36 +400,36 @@ async def perenual_validation(plant_name, region):
         data = response.json()
         if not data.get('data'):
             result = (plant_name, "", 0.0)
-            await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+            redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
             return result
         for plant in data['data']:
             if plant_name.lower() in plant.get('common_name', '').lower():
                 result = (plant['common_name'], plant.get('scientific_name', [''])[0], 0.8)
-                await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+                redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
                 return result
         result = (plant_name, "", 0.0)
-        await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+        redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
         return result
     except requests.RequestException as e:
         logging.error(f"Perenual API query failed: {str(e)}")
         result = (plant_name, "", 0.0)
-        await redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
+        redis_client.set(cache_key, json.dumps(result), ex=60)  # Cache for 60 seconds
         return result
 
 @app.route('/upload', methods=['POST'])
-async def upload():
+def upload():
     try:
         if 'image' not in request.files:
             error_msg = "No image uploaded."
-            return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
+            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
         
         files = request.files.getlist('image')
         if not files or len(files) > 3:
             error_msg = "Please upload 1-3 images (PNG, JPG, JPEG)."
-            return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
+            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
         
         cache_key = f"upload:{md5(''.join([file.filename for file in files]).encode()).hexdigest()}"
-        cached_response = await redis_client.get(cache_key)
+        cached_response = redis_client.get(cache_key)
         if cached_response:
             logging.info("Returning cached upload response")
             return json.loads(cached_response.decode())
@@ -438,16 +438,16 @@ async def upload():
         for file in files:
             if not file.filename or not allowed_file(file.filename):
                 error_msg = f"Invalid file type for {file.filename}. Please upload PNG, JPG, or JPEG."
-                return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
-            encoded = await process_image(file)
+                return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
+            encoded = process_image(file)
             if not encoded:
                 error_msg = f"Failed to process image {file.filename}."
-                return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
+                return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
             encoded_images.append(encoded)
 
         if not PLANT_ID_API_KEY:
             error_msg = "Plant.id API key is missing."
-            return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 500
+            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 500
 
         plant_id_response = requests.post(
             "https://api.plant.id/v2/identify",
@@ -464,14 +464,14 @@ async def upload():
         plant_data = plant_id_response.json()
         if not plant_data.get('suggestions'):
             error_msg = "Plant identification failed."
-            return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
+            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
         suggestion = plant_data['suggestions'][0]
         plant_name = suggestion['plant_details']['common_names'][0] if suggestion['plant_details']['common_names'] else suggestion['plant_name'] or "Unknown plant"
         scientific_name = suggestion['plant_details'].get('scientific_name', 'Unknown scientific name')
         plant_confidence = suggestion['probability']
 
         if plant_confidence < 0.3 and PERENUAL_API_KEY:
-            plant_name, scientific_name, perenual_confidence = await perenual_validation(plant_name, user_prefs['region'])
+            plant_name, scientific_name, perenual_confidence = perenual_validation(plant_name, user_prefs['region'])
             plant_confidence = max(plant_confidence, perenual_confidence)
 
         disease_resp = requests.post(
@@ -487,7 +487,7 @@ async def upload():
         disease_data = disease_resp.json()
         if not disease_data.get('health_assessment'):
             error_msg = "Disease assessment failed."
-            return jsonify({"error": await translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
+            return jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400
 
         if disease_data['health_assessment']['is_healthy']:
             disease_name = "Healthy"
@@ -537,7 +537,7 @@ For {user_prefs['region'] or 'India'}, consider seasonal variations like monsoon
 - Monitor plant response after treatment
             """
 
-        enhanced = await enhance_identification(
+        enhanced = enhance_identification(
             plant_name, scientific_name, plant_confidence, disease_name, disease_confidence,
             user_prefs['region'], user_prefs['language'], disease_description
         )
@@ -547,7 +547,7 @@ For {user_prefs['region'] or 'India'}, consider seasonal variations like monsoon
         disease_name = enhanced['disease']
         disease_confidence = enhanced['disease_confidence']
 
-        remedy_data = await get_region_specific_remedy(
+        remedy_data = get_region_specific_remedy(
             plant_name, scientific_name, disease_name, user_prefs['region'], user_prefs['language'], remedy, disease_description
         )
         remedy = remedy_data['remedy']
@@ -556,20 +556,20 @@ For {user_prefs['region'] or 'India'}, consider seasonal variations like monsoon
         formatted_remedy = format_text_for_display(remedy)
 
         response = {
-            "plant": await translate_text(plant_name, "en", user_prefs['language']),
-            "scientific_name": await translate_text(scientific_name, "en", user_prefs['language']),
+            "plant": translate_text(plant_name, "en", user_prefs['language']),
+            "scientific_name": translate_text(scientific_name, "en", user_prefs['language']),
             "plant_confidence": f"{plant_confidence:.2%}",
-            "disease": await translate_text(disease_name, "en", user_prefs['language']),
+            "disease": translate_text(disease_name, "en", user_prefs['language']),
             "disease_confidence": f"{disease_confidence:.2%}",
             "remedy": formatted_remedy,
             "model": selected_model,
             "typing_effect": True
         }
-        await redis_client.set(cache_key, json.dumps(response), ex=60)  # Cache for 60 seconds
+        redis_client.set(cache_key, json.dumps(response), ex=60)  # Cache for 60 seconds
         return jsonify(response)
     except (IOError, requests.RequestException) as e:
         logging.error(f"Upload endpoint error: {str(e)}")
-        return jsonify({"error": await translate_text(f"Failed to process image or connect to API: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>", "en", user_prefs['language']), "typing_effect": True}), 500
+        return jsonify({"error": translate_text(f"Failed to process image or connect to API: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>", "en", user_prefs['language']), "typing_effect": True}), 500
 
 if __name__ == "__main__":
     import gunicorn
