@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Async CSS with preload for critical styles -->
+    <link rel="preload" href="/static/fontawesome/css/all.min.css" as="style" onload="this.rel='stylesheet'">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Critical CSS for above-the-fold content */
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -28,6 +24,12 @@
             --glass-bg: rgba(255, 255, 255, 0.1);
             --glass-border: rgba(255, 255, 255, 0.2);
             --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
@@ -53,469 +55,9 @@
             z-index: -1;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-            position: relative;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .theme-toggle {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .theme-toggle:hover {
-            background: var(--glass-border);
-            transform: scale(1.1);
-        }
-
-        .preferences-panel {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow);
-        }
-
-        .preferences-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 1rem;
-            align-items: end;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .input-group label {
-            font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .input-field {
-            background: var(--dark-surface);
-            border: 1px solid var(--glass-border);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            color: var(--text-primary);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: var(--primary-gradient);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
-        }
-
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 1rem;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow);
-        }
-
-        .chat-area {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-            max-height: 500px;
-            scroll-behavior: smooth;
-        }
-
-        .chat-area::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .chat-area::-webkit-scrollbar-track {
-            background: var(--dark-surface);
-        }
-
-        .chat-area::-webkit-scrollbar-thumb {
-            background: var(--accent);
-            border-radius: 3px;
-        }
-
-        .message {
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            animation: fadeInUp 0.3s ease;
-        }
-
-        .message.user {
-            flex-direction: row-reverse;
-        }
-
-        .message-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-
-        .message.user .message-avatar {
-            background: var(--secondary-gradient);
-        }
-
-        .message.bot .message-avatar {
-            background: var(--success-gradient);
-        }
-
-        .message.error .message-avatar {
-            background: var(--error);
-        }
-
-        .message-content {
-            max-width: 70%;
-            padding: 1rem 1.25rem;
-            border-radius: 1rem;
-            position: relative;
-        }
-
-        .message.user .message-content {
-            background: var(--primary-gradient);
-            color: white;
-            border-bottom-right-radius: 0.25rem;
-        }
-
-        .message.bot .message-content {
-            background: var(--dark-surface);
-            color: var(--text-primary);
-            border-bottom-left-radius: 0.25rem;
-        }
-
-        .message.error .message-content {
-            background: var(--error);
-            color: white;
-            border-bottom-left-radius: 0.25rem;
-        }
-
-        .message-time {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
-        }
-
-        .input-panel {
-            padding: 1.5rem;
-            background: var(--dark-surface);
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .input-container {
-            display: flex;
-            align-items: flex-end;
-            gap: 1rem;
-            background: var(--dark-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 1rem;
-            padding: 0.75rem;
-            transition: all 0.3s ease;
-        }
-
-        .input-container:focus-within {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .message-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text-primary);
-            font-size: 1rem;
-            line-height: 1.5;
-            resize: none;
-            min-height: 20px;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-
-        .message-input:focus {
-            outline: none;
-        }
-
-        .message-input::placeholder {
-            color: var(--text-secondary);
-        }
-
-        .input-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .upload-btn {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 0.5rem;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .upload-btn:hover {
-            background: var(--glass-border);
-            transform: scale(1.1);
-        }
-
-        .upload-btn input {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-
-        .send-btn {
-            background: var(--primary-gradient);
-            border: none;
-            border-radius: 0.5rem;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            color: white;
-        }
-
-        .send-btn:hover:not(:disabled) {
-            transform: scale(1.1);
-        }
-
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .image-preview {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .preview-item {
-            position: relative;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            max-width: 100px;
-            max-height: 100px;
-        }
-
-        .preview-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .preview-item .remove-btn {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background: var(--error);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            padding: 1rem;
-        }
-
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--glass-border);
-            border-top: 2px solid var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        .welcome-message {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-        }
-
-        .welcome-message h3 {
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-        }
-
-        .quick-actions {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-
-        .quick-action {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-        }
-
-        .quick-action:hover {
-            background: var(--glass-border);
-            transform: translateY(-2px);
-        }
-
-        /* Light theme */
-        .light-theme {
-            --dark-bg: #f8fafc;
-            --dark-surface: #ffffff;
-            --dark-hover: #f1f5f9;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --glass-border: rgba(0, 0, 0, 0.1);
-        }
-
-        .light-theme body::before {
-            background: 
-                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .preferences-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .container {
-                padding: 1rem;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .message-content {
-                max-width: 85%;
-            }
-        }
+        /* Remaining styles loaded async */
     </style>
+    <link rel="stylesheet" href="/static/styles.css" media="print" onload="this.media='all'">
 </head>
 <body>
     <div class="container">
@@ -558,7 +100,7 @@
                     </select>
                 </div>
                 
-                <button class="btn btn-primary" onclick="setPreferences()">
+                <button class="btn btn-primary" onclick="debounce(setPreferences, 500)()">
                     <i class="fas fa-check"></i>
                     Set Preferences
                 </button>
@@ -599,7 +141,7 @@
                             <i class="fas fa-camera"></i>
                             <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
                         </label>
-                        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send message">
+                        <button class="send-btn" id="send-btn" onclick="debounce(sendMessage, 500)()" title="Send message">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
@@ -608,7 +150,7 @@
         </div>
     </div>
 
-    <script>
+    <script defer>
         // Global variables
         let isLightTheme = false;
         let uploadedImages = [];
@@ -627,18 +169,44 @@
         const themeToggle = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
 
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Typing effect for bot messages
+        async function typeMessage(element, content) {
+            element.innerHTML = '';
+            element.classList.add('typing');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            element.classList.remove('typing');
+            element.innerHTML = content;
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = new Date().toLocaleTimeString();
+            element.appendChild(time);
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Auto-resize textarea
             messageInput.addEventListener('input', autoResize);
             
-            // Handle Enter key
-            messageInput.addEventListener('keydown', (e) => {
+            // Handle Enter key with debounce
+            messageInput.addEventListener('keydown', debounce((e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
                 }
-            });
+            }, 300));
 
             // Handle image upload
             imageInput.addEventListener('change', handleImageUpload);
@@ -647,7 +215,17 @@
             themeToggle.addEventListener('click', toggleTheme);
 
             // Set default preferences
-            setPreferences();
+            await setPreferences();
+
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                try {
+                    await navigator.serviceWorker.register('/sw.js');
+                    console.log('Service Worker registered');
+                } catch (error) {
+                    console.error('Service Worker registration failed:', error);
+                }
+            }
         });
 
         // Auto-resize textarea
@@ -684,10 +262,13 @@
                 const data = await res.json();
                 if (data.status === 'success') {
                     addMessage('user', `Preferences updated: Region - ${region}, Language - ${getLanguageName(language)}`);
-                    addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`);
+                    const botMessage = `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`;
+                    const messageId = addMessage('bot', '', false);
+                    const messageContent = document.getElementById(`message-${messageId}`).querySelector('.message-content');
+                    await typeMessage(messageContent, botMessage);
                 }
             } catch (error) {
-                addMessage('error', `Error setting preferences: ${error.message}`);
+                addMessage('error', `Error setting preferences: ${error.message}. <a href="#" onclick="setPreferences()">Retry</a>`);
             }
         }
 
@@ -707,8 +288,42 @@
             return languages[code] || 'English';
         }
 
+        // Compress image before upload
+        async function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const maxWidth = 300;
+                    const maxHeight = 225;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width *= maxHeight / height;
+                            height = maxHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => {
+                        resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+                    }, 'image/jpeg', 0.8);
+                };
+                img.onerror = reject;
+            });
+        }
+
         // Handle image upload
-        function handleImageUpload(e) {
+        async function handleImageUpload(e) {
             const files = Array.from(e.target.files);
             
             if (files.length > 3) {
@@ -721,24 +336,26 @@
             uploadedImages = [];
             imagePreview.innerHTML = '';
             
-            files.forEach((file, index) => {
+            for (const file of files) {
                 if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-                    uploadedImages.push(file);
+                    const compressedFile = await compressImage(file);
+                    uploadedImages.push(compressedFile);
                     const reader = new FileReader();
                     reader.onload = (e) => {
+                        const index = uploadedImages.length - 1;
                         const previewItem = document.createElement('div');
                         previewItem.className = 'preview-item';
                         previewItem.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview">
+                            <img src="${e.target.result}" alt="Preview" loading="lazy">
                             <button class="remove-btn" onclick="removeImage(${index})">×</button>
                         `;
                         imagePreview.appendChild(previewItem);
                     };
-                    reader.readAsDataURL(file);
+                    reader.readAsDataURL(compressedFile);
                 } else {
                     alert(`Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
                 }
-            });
+            }
         }
 
         // Remove image
@@ -777,17 +394,28 @@
                 welcomeMessage.remove();
             }
             
-            // Add user message
+            // Add user message (optimistic update)
+            let userMessageId;
             if (message) {
-                addMessage('user', message);
+                userMessageId = addMessage('user', message);
             }
             
             if (hasImages) {
-                addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
+                userMessageId = addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
             }
             
-            // Show loading
+            // Show loading with progress bar
             const loadingId = addMessage('bot', '', true);
+            const loadingElement = document.getElementById(`message-${loadingId}`).querySelector('.loading');
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            progressBar.innerHTML = '<div class="progress-bar-fill"></div>';
+            loadingElement.appendChild(progressBar);
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress = Math.min(progress + 5, 90);
+                loadingElement.querySelector('.progress-bar-fill').style.width = `${progress}%`;
+            }, 500);
             
             // Prepare form data
             const formData = new FormData();
@@ -805,6 +433,7 @@
                     body: formData
                 });
                 
+                clearInterval(progressInterval);
                 removeMessage(loadingId);
                 
                 if (!res.ok) {
@@ -814,29 +443,43 @@
                 const data = await res.json();
                 
                 if (data.error) {
-                    addMessage('error', data.error);
-                } else if (hasImages) {
-                    const response = `
-                        <div style="margin-bottom: 1rem;">
-                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
-                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                                <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
-                                <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
-                                <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
-                            </div>
-                            <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
-                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
-                                ${data.remedy}
-                            </div>
-                        </div>
-                    `;
-                    addMessage('bot', response);
+                    addMessage('error', `${data.error} <a href="#" onclick="sendMessage()">Retry</a>`);
                 } else {
-                    addMessage('bot', data.response);
+                    let response;
+                    if (hasImages) {
+                        response = `
+                            <div style="margin-bottom: 1rem;">
+                                <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
+                                <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                                    <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
+                                    <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
+                                    <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
+                                </div>
+                                <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
+                                <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
+                                    ${data.remedy}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        response = data.response;
+                    }
+                    const messageId = addMessage('bot', '', data.typing_effect);
+                    const messageContent = document.getElementById(`message-${messageId}`).querySelector('.message-content');
+                    if (data.typing_effect) {
+                        await typeMessage(messageContent, response);
+                    } else {
+                        messageContent.innerHTML = response;
+                        const time = document.createElement('div');
+                        time.className = 'message-time';
+                        time.textContent = new Date().toLocaleTimeString();
+                        messageContent.appendChild(time);
+                    }
                 }
             } catch (error) {
+                clearInterval(progressInterval);
                 removeMessage(loadingId);
-                addMessage('error', `Error: Failed to connect to server: ${error.message}`);
+                addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="sendMessage()">Retry</a>`);
             }
             
             // Clear inputs
@@ -880,11 +523,14 @@
                 `;
             } else {
                 messageContent.innerHTML = content;
-                
-                const time = document.createElement('div');
-                time.className = 'message-time';
-                time.textContent = new Date().toLocaleTimeString();
-                messageContent.appendChild(time);
+                if (!content && !isLoading) {
+                    messageContent.classList.add('typing');
+                } else {
+                    const time = document.createElement('div');
+                    time.className = 'message-time';
+                    time.textContent = new Date().toLocaleTimeString();
+                    messageContent.appendChild(time);
+                }
             }
             
             messageDiv.appendChild(avatar);
