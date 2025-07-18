@@ -12,37 +12,18 @@
       }
     },
     {
-      "src": "/static/**",
-      "use": "@vercel/static"
-    },
-    {
       "src": "/templates/**",
       "use": "@vercel/static"
     }
   ],
-  "outputDirectory": "static",
+  "outputDirectory": "templates",
   "env": {
     "PYTHON_VERSION": "3.9"
   },
   "rewrites": [
     {
-      "source": "/static/(.*)",
-      "destination": "/static/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/api/app.py"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/static/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
     }
   ]
 }
