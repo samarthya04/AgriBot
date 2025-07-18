@@ -1,9 +1,52 @@
 {
-    "framework": "flask",
-    "rewrites": [
-        { "source": "/static/(.*)", "destination": "/static/$1" },
-        { "source": "/(.*)", "destination": "/api/app.py" }
-    ],
-    "cleanUrls": true,
-    "trailingSlash": false
+  "version": 2,
+  "framework": null,
+  "functions": {
+    "api/app.py": {
+      "maxDuration": 10,
+      "memory": 256
+    }
+  },
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/app.py"
+    }
+  ],
+  "builds": [
+    {
+      "src": "/api/app.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
+    },
+    {
+      "src": "/static/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "/templates/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "outputDirectory": "static",
+  "env": {
+    "PYTHON_VERSION": "3.9"
+  },
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
