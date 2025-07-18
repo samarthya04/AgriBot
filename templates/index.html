@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
-    <!-- Async CSS with preload for critical styles -->
-    <link rel="preload" href="/static/fontawesome/css/all.min.css" as="style" onload="this.rel='stylesheet'">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
     <style>
-        /* Critical CSS for above-the-fold content */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -24,12 +29,6 @@
             --glass-bg: rgba(255, 255, 255, 0.1);
             --glass-border: rgba(255, 255, 255, 0.2);
             --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
         }
 
         body {
@@ -55,20 +54,522 @@
             z-index: -1;
         }
 
-        /* Remaining styles loaded async */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle:hover {
+            background: var(--glass-border);
+            transform: scale(1.1);
+        }
+
+        .preferences-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
+
+        .preferences-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .input-field {
+            background: var(--dark-surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
+
+        .chat-area {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: 500px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: var(--dark-surface);
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: var(--secondary-gradient);
+        }
+
+        .message.bot .message-avatar {
+            background: var(--success-gradient);
+        }
+
+        .message.error .message-avatar {
+            background: var(--error);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: var(--primary-gradient);
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .message.bot .message-content {
+            background: var(--dark-surface);
+            color: var(--text-primary);
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .message.error .message-content {
+            background: var(--error);
+            color: white;
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .input-panel {
+            padding: 1.5rem;
+            background: var(--dark-surface);
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .input-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            background: var(--dark-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-container:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: none;
+            min-height: 20px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .message-input:focus {
+            outline: none;
+        }
+
+        .message-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .upload-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-btn:hover {
+            background: var(--glass-border);
+            transform: scale(1.1);
+        }
+
+        .upload-btn input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .send-btn {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 0.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .image-preview {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            max-width: 100px;
+            max-height: 100px;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-item .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            padding: 1rem;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .welcome-message h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .quick-action {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .quick-action:hover {
+            background: var(--glass-border);
+            transform: translateY(-2px);
+        }
+
+        /* Light theme */
+        .light-theme {
+            --dark-bg: #f8fafc;
+            --dark-surface: #ffffff;
+            --dark-hover: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
+        }
+
+        .light-theme body::before {
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .preferences-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+
+        .svg-icon {
+            width: 1em;
+            height: 1em;
+            vertical-align: middle;
+            fill: currentColor;
+        }
+
+        .prose {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .prose h1 {
+            font-size: 1.5em;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        .prose h2, .prose h3, .prose h4 {
+            font-size: 1.25em;
+            margin-top: 0.75em;
+            margin-bottom: 0.5em;
+        }
+
+        .prose p {
+            margin-bottom: 0.5em;
+        }
+
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5em;
+            margin-bottom: 0.5em;
+        }
+
+        .prose li {
+            margin-bottom: 0.25em;
+        }
+
+        .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
+            color: var(--text-primary);
+        }
     </style>
-    <link rel="stylesheet" href="/static/styles.css" media="print" onload="this.media='all'">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>
-                <i class="fas fa-seedling"></i>
+                <svg class="svg-icon" viewBox="0 0 512 512"><path d="M256 32C167.6 32 96 103.6 96 192c0 2.7 .1 5.4 .2 8.1C76.7 204.6 0 280.1 0 359.4 0 432.3 57.7 496 128 496c49.6 0 93.2-28.7 114.6-71.8C249.3 430 256 436.5 256 443.2c0 14.7-11.9 26.6-26.6 26.6H192c-8.8 0-16-7.2-16-16s7.2-16 16-16h37.4c4.9 0 8.9-4 8.9-8.9 0-1.7-.5-3.4-1.4-4.8C216.5 465.4 177 496 128 496c-70.7 0-128-57.3-128-128 0-67.1 51.8-122.1 118.1-127.7 2.5-14.8 6.5-29 11.7-42.5C129.5 134.5 183.8 80 256 80s126.5 54.5 126.2 117.8c5.2 13.5 9.2 27.7 11.7 42.5C460.2 245.9 512 300.9 512 368c0 70.7-57.3 128-128 128-49 0-88.5-30.6-108.9-71.9-.9 1.5-1.4 3.2-1.4 4.8 0 4.9 4 8.9 8.9 8.9H320c8.8 0 16 7.2 16 16s-7.2 16-16 16h-37.4c-14.7 0-26.6-11.9-26.6-26.6 0-6.7 6.7-13.2 13.4-19.1C290.8 467.3 334.4 496 384 496c70.7 0 128-57.3 128-128 0-79.3-76.7-154.8-96.2-159.3.1-2.7 .2-5.4 .2-8.1 0-88.4-71.6-160-160-160z"/></svg>
                 AgriBot
             </h1>
             <p>Your intelligent agricultural companion for crop management and disease detection</p>
             <div class="theme-toggle" id="theme-toggle">
-                <i class="fas fa-sun" id="theme-icon"></i>
+                <svg id="theme-icon" class="svg-icon" viewBox="0 0 512 512"><path d="M256 159.1c-53 0-96 43-96 96s43 96 96 96 96-43 96-96-43-96-96-96zm223.8-48.2C512 155.6 512 227.6 512 256c0 141.4-114.6 256-256 256S0 397.4 0 256 114.6 0 256 0c28.4 0 100.4 0 145.1 32.2 6.3 4.5 8.1 13.1 4.4 19.8-3.7 6.7-11.9 9.2-18.9 5.8C351.4 37.3 305.7 32 256 32 132.5 32 32 132.5 32 256s100.5 224 224 224 224-100.5 224-224c0-49.7-5.3-95.4-25.8-130.6-3.4-7-1-15.2 5.7-18.9 6.7-3.6 15.3-1.9 19.9 4.4z"/></svg>
             </div>
         </div>
 
@@ -76,7 +577,7 @@
             <div class="preferences-grid">
                 <div class="input-group">
                     <label for="region">
-                        <i class="fas fa-map-marker-alt"></i>
+                        <svg class="svg-icon" viewBox="0 0 384 512"><path d="M172.3 501.7C27 436 0 279.4 0 192C0 85.96 85.96 0 192 0s192 85.96 192 192c0 87.4-27 244-172.3 309.7-11.3 5.1-24.7 5.1-36 0zM96 184c0-13.3 10.7-24 24-24h136c13.3 0 24 10.7 24 24v136c0 13.3-10.7 24-24 24H120c-13.3 0-24-10.7-24-24V184z"/></svg>
                         Region
                     </label>
                     <input type="text" id="region" class="input-field" placeholder="e.g., Punjab, India" value="India">
@@ -84,7 +585,7 @@
                 
                 <div class="input-group">
                     <label for="language">
-                        <i class="fas fa-language"></i>
+                        <svg class="svg-icon" viewBox="0 0 640 512"><path d="M0 128C0 92.65 28.65 64 64 64H256V128H64V384H192V448H64C28.65 448 0 419.3 0 384V128zM320 256C320 238.3 334.3 224 352 224H480C497.7 224 512 238.3 512 256V448H576C611.3 448 640 419.3 640 384V128C640 92.65 611.3 64 576 64H352C316.7 64 288 92.65 288 128V256H224V384C224 419.3 252.7 448 288 448H320V256zM352 128H576V384H352V128z"/></svg>
                         Language
                     </label>
                     <select id="language" class="input-field">
@@ -100,8 +601,8 @@
                     </select>
                 </div>
                 
-                <button class="btn btn-primary" onclick="debounce(setPreferences, 500)()">
-                    <i class="fas fa-check"></i>
+                <button class="btn btn-primary" onclick="setPreferences()">
+                    <svg class="svg-icon" viewBox="0 0 448 512"><path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/></svg>
                     Set Preferences
                 </button>
             </div>
@@ -114,21 +615,30 @@
                     <p>I'm here to help you with:</p>
                     <div class="quick-actions">
                         <div class="quick-action" onclick="sendQuickMessage('What crops are suitable for my region?')">
-                            <i class="fas fa-seedling"></i> Crop Recommendations
+                            <svg class="svg-icon" viewBox="0 0 512 512"><path d="M256 32C167.6 32 96 103.6 96 192c0 2.7 .1 5.4 .2 8.1C76.7 204.6 0 280.1 0 359.4 0 432.3 57.7 496 128 496c49.6 0 93.2-28.7 114.6-71.8C249.3 430 256 436.5 256 443.2c0 14.7-11.9 26.6-26.6 26.6H192c-8.8 0-16-7.2-16-16s7.2-16 16-16h37.4c4.9 0 8.9-4 8.9-8.9 0-1.7-.5-3.4-1.4-4.8C216.5 465.4 177 496 128 496c-70.7 0-128-57.3-128-128 0-67.1 51.8-122.1 118.1-127.7 2.5-14.8 6.5-29 11.7-42.5C129.5 134.5 183.8 80 256 80s126.5 54.5 126.2 117.8c5.2 13.5 9.2 27.7 11.7 42.5C460.2 245.9 512 300.9 512 368c0 70.7-57.3 128-128 128-49 0-88.5-30.6-108.9-71.9-.9 1.5-1.4 3.2-1.4 4.8 0 4.9 4 8.9 8.9 8.9H320c8.8 0 16 7.2 16 16s-7.2 16-16 16h-37.4c-14.7 0-26.6-11.9-26.6-26.6 0-6.7 6.7-13.2 13.4-19.1C290.8 467.3 334.4 496 384 496c70.7 0 128-57.3 128-128 0-79.3-76.7-154.8-96.2-159.3.1-2.7 .2-5.4 .2-8.1 0-88.4-71.6-160-160-160z"/></svg>
+                            Crop Recommendations
                         </div>
                         <div class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')">
-                            <i class="fas fa-cloud-sun"></i> Weather Info
+                            <svg class="svg-icon" viewBox="0 0 640 512"><path d="M0 336c0 44.2 35.8 80 80 80H560c44.2 0 80-35.8 80-80s-35.8-80-80-80c-7.8 0-15.3 1.1-22.4 3.2C509.7 165.7 429.8 96 336 96c-57.3 0-108.8 28.6-139.7 72.6C167.2 161.1 136.7 160 106.7 160c-77.5 0-140 62.5-140 140 0 12 .7 23.7 2 35.2C27.1 349.4 48 384.5 48 432c0 26.5-21.5 48-48 48S-48 458.5-48 432V400H-80v32c0 44.2 35.8 80 80 80s80-35.8 80-80c0-8.9-1.5-17.5-4.2-25.6C106.8 446.9 158.5 480 216 480c51.7 0 98.5-25.3 126.6-64H80c-26.5 0-48-21.5-48-48s21.5-48 48-48H560c26.5 0 48 21.5 48 48s-21.5 48-48 48H385.5c25.4 22.7 58.5 36 94.5 36c79.5 0 144-64.5 144-144s-64.5-144-144-144c-15.3 0-30 2.4-44.1 7C469.1 88.3 413.4 32 344 32c-97.2 0-176 78.8-176 176 0 11.7 1.1 23.1 3.3 34.1C120.2 255.2 80 301.8 80 356c0 11.3 1.9 22.2 5.3 32.5C58.5 361.7 48 328.2 48 292c0-61.9 50.1-112 112-112c24.8 0 47.7 8.1 66.3 21.6C245.8 149.3 291.2 112 344 112c30.6 0 59.1 14.1 78.1 38.1C433.7 137.9 448 126.1 448 112c0-26.5-21.5-48-48-48s-48 21.5-48 48v32h32V112c0-44.2-35.8-80-80-80s-80 35.8-80 80s35.8 80 80 80c8.9 0 17.5-1.5 25.6-4.2C297.1 225.1 264 256 224 256c-13.3 0-24-10.7-24-24s10.7-24 24-24c11.1 0 20.4 7.5 23.1 17.6C260.5 198.8 287.7 176 320 176c44.2 0 80-35.8 80-80s-35.8-80-80-80z"/></svg>
+                            Weather Info
                         </div>
                         <div class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')">
-                            <i class="fas fa-shield-alt"></i> Disease Prevention
+                            <svg class="svg-icon" viewBox="0 0 512 512"><path d="M256 512c141.4 0 256-114.6 256-256S397.4 0 256 0S0 114.6 0 256S114.6 512 256 512zm24-400c0-8.8-7.2-16-16-16s-16 7.2-16 16V137.6c-10.2-1-20.7-1.6-31.3-1.6C144.9 136 80 200.9 80 278.7c0 30.8 9.1 59.5 24.8 83.5l-14.9 14.9c-6.2 6.2-6.2 16.4 0 22.6s16.4 6.2 22.6 0l20.5-20.5c6.7 5.5 14 10.3 21.7 14.3V432c0 8.8 7.2 16 16 16s16-7.2 16-16V392.3c23.1-7.2 43.9-19.6 60.2-36.1l50.7 50.7c6.2 6.2 16.4 6.2 22.6 0s6.2-16.4 0-22.6l-50.7-50.7c16.6-16.5 29-36.6 36.1-59.7H336c8.8 0 16-7.2 16-16s-7.2-16-16-16H291.8c-2.1-10.6-5.8-20.8-10.8-30.3l36.5-36.5c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0l-40.4 40.4C243 172.3 228.2 160 211.3 160c-3.8 0-7.6 .4-11.3 1.1V112zM208 278.7c0-25.8 20.9-46.7 46.7-46.7s46.7 20.9 46.7 46.7-20.9 46.7-46.7 46.7S208 304.5 208 278.7z"/></svg>
+                            Disease Prevention
                         </div>
                         <div class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')">
-                            <i class="fas fa-leaf"></i> Fertilizer Guide
+                            <svg class="svg-icon" viewBox="0 0 512 512"><path d="M256 32C167.6 32 96 103.6 96 192c0 2.7 .1 5.4 .2 8.1C76.7 204.6 0 280.1 0 359.4 0 432.3 57.7 496 128 496c49.6 0 93.2-28.7 114.6-71.8C249.3 430 256 436.5 256 443.2c0 14.7-11.9 26.6-26.6 26.6H192c-8.8 0-16-7.2-16-16s7.2-16 16-16h37.4c4.9 0 8.9-4 8.9-8.9 0-1.7-.5-3.4-1.4-4.8C216.5 465.4 177 496 128 496c-70.7 0-128-57.3-128-128 0-67.1 51.8-122.1 118.1-127.7 2.5-14.8 6.5-29 11.7-42.5C129.5 134.5 183.8 80 256 80s126.5 54.5 126.2 117.8c5.2 13.5 9.2 27.7 11.7 42.5C460.2 245.9 512 300.9 512 368c0 70.7-57.3 128-128 128-49 0-88.5-30.6-108.9-71.9-.9 1.5-1.4 3.2-1.4 4.8 0 4.9 4 8.9 8.9 8.9H320c8.8 0 16 7.2 16 16s-7.2 16-16 16h-37.4c-14.7 0-26.6-11.9-26.6-26.6 0-6.7 6.7-13.2 13.4-19.1C290.8 467.3 334.4 496 384 496c70.7 0 128-57.3 128-128 0-79.3-76.7-154.8-96.2-159.3.1-2.7 .2-5.4 .2-8.1 0-88.4-71.6-160-160-160z"/></svg>
+                            Fertilizer Guide
                         </div>
                     </div>
                     <p style="margin-top: 1rem; font-size: 0.9rem;">
                         You can also upload plant images for disease detection!
                     </p>
+                </div>
+                <div id="progress-bar" class="mt-4 hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progress" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
 
@@ -138,11 +648,11 @@
                     <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases, or farming techniques..." rows="1"></textarea>
                     <div class="input-actions">
                         <label class="upload-btn" title="Upload plant images">
-                            <i class="fas fa-camera"></i>
+                            <svg class="svg-icon" viewBox="0 0 512 512"><path d="M448 80c8.8 0 16 7.2 16 16V416c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V96c0-8.8 7.2-16 16-16H448zM64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm96 112a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm80 104c0 25.4-10.1 49.9-28.2 67.9L352 416H160L300.2 315.9c-18.1-18-28.2-42.5-28.2-67.9H240z"/></svg>
                             <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
                         </label>
-                        <button class="send-btn" id="send-btn" onclick="debounce(sendMessage, 500)()" title="Send message">
-                            <i class="fas fa-paper-plane"></i>
+                        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send message">
+                            <svg class="svg-icon" viewBox="0 0 512 512"><path d="M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 493.2 160 480V396.4c0-4 1.5-7.8 4.2-10.7L331.8 202.8c5.8-6.3 15.6-6.3 21.4 0l68 73.9c7.9 8.6 21.5 11.4 33.1 7.1s19.1-14.8 17.9-27l-64-416c-1.9-12.1 3.4-24.2 13.5-31.2s22.9-7.9 33.1-2.1l80 48c10.1 6.1 16.4 17.1 16.4 29.2s-6.3 23.1-16.4 29.2l-80 48c-10.1 6.1-22.9 5.2-33.1-2.1zM160 96c0-35.3 28.7-64 64-64H352c35.3 0 64 28.7 64 64v96c0 35.3-28.7 64-64 64H224c-35.3 0-64-28.7-64-64V96z"/></svg>
                         </button>
                     </div>
                 </div>
@@ -150,7 +660,53 @@
         </div>
     </div>
 
-    <script defer>
+    <script>
+        // Service Worker logic
+        const CACHE_NAME = 'agribot-cache-v2';
+        const urlsToCache = ['/', '/index.html'];
+        const registerServiceWorker = async () => {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register(
+                        URL.createObjectURL(new Blob([
+                            `
+                            self.addEventListener('install', event => {
+                                event.waitUntil(
+                                    caches.open('${CACHE_NAME}')
+                                        .then(cache => cache.addAll(${JSON.stringify(urlsToCache)}))
+                                );
+                            });
+                            self.addEventListener('fetch', event => {
+                                event.respondWith(
+                                    caches.match(event.request)
+                                        .then(response => response || fetch(event.request))
+                                );
+                            });
+                            self.addEventListener('activate', event => {
+                                const cacheWhitelist = ['${CACHE_NAME}'];
+                                event.waitUntil(
+                                    caches.keys().then(cacheNames => {
+                                        return Promise.all(
+                                            cacheNames.map(cacheName => {
+                                                if (!cacheWhitelist.includes(cacheName)) {
+                                                    return caches.delete(cacheName);
+                                                }
+                                            })
+                                        );
+                                    })
+                                );
+                            });
+                            `
+                        ], { type: 'application/javascript' }))
+                    );
+                    console.log('Service Worker registered');
+                } catch (err) {
+                    console.error('Service Worker registration failed:', err);
+                }
+            }
+        };
+        registerServiceWorker();
+
         // Global variables
         let isLightTheme = false;
         let uploadedImages = [];
@@ -168,45 +724,32 @@
         const languageSelect = document.getElementById('language');
         const themeToggle = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
-
-        // Debounce function
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Typing effect for bot messages
-        async function typeMessage(element, content) {
-            element.innerHTML = '';
-            element.classList.add('typing');
-            await new Promise(resolve => setTimeout(resolve, 500));
-            element.classList.remove('typing');
-            element.innerHTML = content;
-            const time = document.createElement('div');
-            time.className = 'message-time';
-            time.textContent = new Date().toLocaleTimeString();
-            element.appendChild(time);
-        }
+        const progressBar = document.getElementById('progress-bar');
+        const progress = document.getElementById('progress');
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load saved preferences
+            const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
+            if (savedPrefs.region) {
+                regionInput.value = savedPrefs.region;
+                currentRegion = savedPrefs.region;
+            }
+            if (savedPrefs.language) {
+                languageSelect.value = savedPrefs.language;
+                currentLanguage = savedPrefs.language;
+            }
+
             // Auto-resize textarea
             messageInput.addEventListener('input', autoResize);
             
-            // Handle Enter key with debounce
-            messageInput.addEventListener('keydown', debounce((e) => {
+            // Handle Enter key
+            messageInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
                 }
-            }, 300));
+            });
 
             // Handle image upload
             imageInput.addEventListener('change', handleImageUpload);
@@ -215,17 +758,7 @@
             themeToggle.addEventListener('click', toggleTheme);
 
             // Set default preferences
-            await setPreferences();
-
-            // Register service worker
-            if ('serviceWorker' in navigator) {
-                try {
-                    await navigator.serviceWorker.register('/sw.js');
-                    console.log('Service Worker registered');
-                } catch (error) {
-                    console.error('Service Worker registration failed:', error);
-                }
-            }
+            setPreferences();
         });
 
         // Auto-resize textarea
@@ -238,7 +771,61 @@
         function toggleTheme() {
             isLightTheme = !isLightTheme;
             document.body.classList.toggle('light-theme', isLightTheme);
-            themeIcon.className = isLightTheme ? 'fas fa-moon' : 'fas fa-sun';
+            themeIcon.innerHTML = isLightTheme
+                ? '<svg class="svg-icon" viewBox="0 0 384 512"><path d="M223.5 32C100 32 0 132.3 0 256S100 480 223.5 480c60.6 0 115.5-24.2 155.8-63.4c5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6c-96.9 0-175.5-78.8-175.5-176c0-65.8 36-123.1 89.3-153.3c6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"/></svg>'
+                : '<svg class="svg-icon" viewBox="0 0 512 512"><path d="M256 159.1c-53 0-96 43-96 96s43 96 96 96 96-43 96-96-43-96-96-96zm223.8-48.2C512 155.6 512 227.6 512 256c0 141.4-114.6 256-256 256S0 397.4 0 256 114.6 0 256 0c28.4 0 100.4 0 145.1 32.2 6.3 4.5 8.1 13.1 4.4 19.8-3.7 6.7-11.9 9.2-18.9 5.8C351.4 37.3 305.7 32 256 32 132.5 32 32 132.5 32 256s100.5 224 224 224 224-100.5 224-224c0-49.7-5.3-95.4-25.8-130.6-3.4-7-1-15.2 5.7-18.9 6.7-3.6 15.3-1.9 19.9 4.4z"/></svg>';
+        }
+
+        // Image compression
+        async function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                img.src = URL.createObjectURL(file);
+                img.onload = () => {
+                    const maxWidth = 400;
+                    const maxHeight = 300;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(blob => {
+                        resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+                        URL.revokeObjectURL(img.src);
+                    }, 'image/jpeg', 0.85);
+                };
+                img.onerror = reject;
+            });
+        }
+
+        // Typing effect
+        async function typeResponse(text, element, speed = 20) {
+            element.innerHTML = '';
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text.charAt(i);
+                await new Promise(resolve => setTimeout(resolve, speed));
+                element.scrollTop = element.scrollHeight;
+            }
+        }
+
+        // Progress bar
+        function updateProgress(percent) {
+            progressBar.classList.remove('hidden');
+            progress.style.width = `${percent}%`;
+            if (percent >= 100) setTimeout(() => progressBar.classList.add('hidden'), 500);
         }
 
         // Set preferences
@@ -254,20 +841,27 @@
             formData.append('language', language);
             
             try {
+                updateProgress(10);
                 const res = await fetch('/set_prefs', {
                     method: 'POST',
                     body: formData
                 });
+                updateProgress(50);
                 if (!res.ok) throw new Error('Failed to set preferences');
                 const data = await res.json();
+                updateProgress(100);
                 if (data.status === 'success') {
+                    localStorage.setItem('userPrefs', JSON.stringify({
+                        region: region,
+                        language: language
+                    }));
                     addMessage('user', `Preferences updated: Region - ${region}, Language - ${getLanguageName(language)}`);
-                    const botMessage = `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`;
-                    const messageId = addMessage('bot', '', false);
-                    const messageContent = document.getElementById(`message-${messageId}`).querySelector('.message-content');
-                    await typeMessage(messageContent, botMessage);
+                    addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`);
+                } else {
+                    addMessage('error', `Error: ${data.error}`);
                 }
             } catch (error) {
+                updateProgress(100);
                 addMessage('error', `Error setting preferences: ${error.message}. <a href="#" onclick="setPreferences()">Retry</a>`);
             }
         }
@@ -288,46 +882,12 @@
             return languages[code] || 'English';
         }
 
-        // Compress image before upload
-        async function compressImage(file) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.src = URL.createObjectURL(file);
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const maxWidth = 300;
-                    const maxHeight = 225;
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > height) {
-                        if (width > maxWidth) {
-                            height *= maxWidth / width;
-                            width = maxWidth;
-                        }
-                    } else {
-                        if (height > maxHeight) {
-                            width *= maxHeight / height;
-                            height = maxHeight;
-                        }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    canvas.toBlob((blob) => {
-                        resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
-                    }, 'image/jpeg', 0.8);
-                };
-                img.onerror = reject;
-            });
-        }
-
         // Handle image upload
         async function handleImageUpload(e) {
             const files = Array.from(e.target.files);
             
             if (files.length > 3) {
-                alert('Please upload a maximum of 3 images.');
+                addMessage('error', 'Please upload a maximum of 3 images.');
                 imageInput.value = '';
                 imagePreview.innerHTML = '';
                 return;
@@ -335,27 +895,30 @@
             
             uploadedImages = [];
             imagePreview.innerHTML = '';
+            updateProgress(10);
             
-            for (const file of files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
                 if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-                    const compressedFile = await compressImage(file);
-                    uploadedImages.push(compressedFile);
+                    const compressed = await compressImage(file);
+                    uploadedImages.push(compressed);
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        const index = uploadedImages.length - 1;
                         const previewItem = document.createElement('div');
                         previewItem.className = 'preview-item';
                         previewItem.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview" loading="lazy">
-                            <button class="remove-btn" onclick="removeImage(${index})">×</button>
+                            <img src="${e.target.result}" alt="Preview">
+                            <button class="remove-btn" onclick="removeImage(${i})">×</button>
                         `;
                         imagePreview.appendChild(previewItem);
                     };
-                    reader.readAsDataURL(compressedFile);
+                    reader.readAsDataURL(file);
+                    updateProgress(10 + (i + 1) * (80 / files.length));
                 } else {
-                    alert(`Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
+                    addMessage('error', `Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
                 }
             }
+            updateProgress(100);
         }
 
         // Remove image
@@ -394,46 +957,37 @@
                 welcomeMessage.remove();
             }
             
-            // Add user message (optimistic update)
-            let userMessageId;
+            // Add user message
             if (message) {
-                userMessageId = addMessage('user', message);
+                addMessage('user', message);
             }
             
             if (hasImages) {
-                userMessageId = addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
+                addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
             }
             
-            // Show loading with progress bar
+            // Show loading
             const loadingId = addMessage('bot', '', true);
-            const loadingElement = document.getElementById(`message-${loadingId}`).querySelector('.loading');
-            const progressBar = document.createElement('div');
-            progressBar.className = 'progress-bar';
-            progressBar.innerHTML = '<div class="progress-bar-fill"></div>';
-            loadingElement.appendChild(progressBar);
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress = Math.min(progress + 5, 90);
-                loadingElement.querySelector('.progress-bar-fill').style.width = `${progress}%`;
-            }, 500);
             
             // Prepare form data
             const formData = new FormData();
             if (message) {
                 formData.append('query', message);
             }
-            uploadedImages.forEach((file) => {
-                formData.append('image', file);
-            });
+            for (let i = 0; i < uploadedImages.length; i++) {
+                formData.append('image', uploadedImages[i]);
+                updateProgress(10 + (i + 1) * (80 / uploadedImages.length));
+            }
             
             try {
                 const endpoint = hasImages ? '/upload' : '/chat';
+                updateProgress(10);
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     body: formData
                 });
+                updateProgress(50);
                 
-                clearInterval(progressInterval);
                 removeMessage(loadingId);
                 
                 if (!res.ok) {
@@ -441,44 +995,61 @@
                 }
                 
                 const data = await res.json();
+                updateProgress(100);
                 
                 if (data.error) {
-                    addMessage('error', `${data.error} <a href="#" onclick="sendMessage()">Retry</a>`);
-                } else {
-                    let response;
-                    if (hasImages) {
-                        response = `
-                            <div style="margin-bottom: 1rem;">
-                                <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
-                                <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                                    <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
-                                    <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
-                                    <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
-                                </div>
-                                <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
-                                <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
-                                    ${data.remedy}
-                                </div>
+                    addMessage('error', data.error);
+                } else if (hasImages) {
+                    const response = `
+                        <div class="prose">
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
+                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                                <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
+                                <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
+                                <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
                             </div>
-                        `;
-                    } else {
-                        response = data.response;
-                    }
-                    const messageId = addMessage('bot', '', data.typing_effect);
-                    const messageContent = document.getElementById(`message-${messageId}`).querySelector('.message-content');
+                            <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
+                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
+                                ${marked.parse(data.remedy)}
+                            </div>
+                        </div>
+                    `;
                     if (data.typing_effect) {
-                        await typeMessage(messageContent, response);
-                    } else {
-                        messageContent.innerHTML = response;
+                        const messageContent = document.createElement('div');
+                        messageContent.className = 'message-content';
+                        addMessage('bot', '');
+                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
+                        await typeResponse(response, lastMessage);
+                        lastMessage.innerHTML = response;
                         const time = document.createElement('div');
                         time.className = 'message-time';
                         time.textContent = new Date().toLocaleTimeString();
-                        messageContent.appendChild(time);
+                        lastMessage.appendChild(time);
+                    } else {
+                        addMessage('bot', response);
                     }
+                    addMessage('bot', `Model: ${data.model}`);
+                } else {
+                    const response = `<div class="prose">${marked.parse(data.response)}</div>`;
+                    if (data.typing_effect) {
+                        const messageContent = document.createElement('div');
+                        messageContent.className = 'message-content';
+                        addMessage('bot', '');
+                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
+                        await typeResponse(response, lastMessage);
+                        lastMessage.innerHTML = response;
+                        const time = document.createElement('div');
+                        time.className = 'message-time';
+                        time.textContent = new Date().toLocaleTimeString();
+                        lastMessage.appendChild(time);
+                    } else {
+                        addMessage('bot', response);
+                    }
+                    addMessage('bot', `Model: ${data.model}`);
                 }
             } catch (error) {
-                clearInterval(progressInterval);
                 removeMessage(loadingId);
+                updateProgress(100);
                 addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="sendMessage()">Retry</a>`);
             }
             
@@ -504,11 +1075,11 @@
             avatar.className = 'message-avatar';
             
             if (type === 'user') {
-                avatar.innerHTML = '<i class="fas fa-user"></i>';
+                avatar.innerHTML = '<svg class="svg-icon" viewBox="0 0 448 512"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0S96 57.3 96 128s57.3 128 128 128zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"/></svg>';
             } else if (type === 'bot') {
-                avatar.innerHTML = '<i class="fas fa-robot"></i>';
+                avatar.innerHTML = '<svg class="svg-icon" viewBox="0 0 640 512"><path d="M192 64C86 64 0 150 0 256S86 448 192 448H352c106 0 192-86 192-192s-86-192-192-192H320c0 17.7-14.3 32-32 32H224c-17.7 0-32-14.3-32-32zM512 272c0 70.7-57.3 128-128 128H192C121.3 400 64 342.7 64 272s57.3-128 128-128H384c70.7 0 128 57.3 128 128zm-96-112H224c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16H416c8.8 0 16-7.2 16-16V176c0-8.8-7.2-16-16-16z"/></svg>';
             } else if (type === 'error') {
-                avatar.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                avatar.innerHTML = '<svg class="svg-icon" viewBox="0 0 512 512"><path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480H40c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24V296c0 13.3 10.7 24 24 24s24-10.7 24-24V184c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/></svg>';
             }
             
             const messageContent = document.createElement('div');
@@ -523,14 +1094,11 @@
                 `;
             } else {
                 messageContent.innerHTML = content;
-                if (!content && !isLoading) {
-                    messageContent.classList.add('typing');
-                } else {
-                    const time = document.createElement('div');
-                    time.className = 'message-time';
-                    time.textContent = new Date().toLocaleTimeString();
-                    messageContent.appendChild(time);
-                }
+                
+                const time = document.createElement('div');
+                time.className = 'message-time';
+                time.textContent = new Date().toLocaleTimeString();
+                messageContent.appendChild(time);
             }
             
             messageDiv.appendChild(avatar);
