@@ -416,6 +416,24 @@
             font-size: 12px;
         }
 
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            padding: 1rem;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
         .welcome-message {
             text-align: center;
             padding: 2rem;
@@ -477,6 +495,11 @@
             }
         }
 
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .preferences-grid {
                 grid-template-columns: 1fr;
@@ -528,21 +551,15 @@
             list-style-type: disc;
             padding-left: 1.5em;
             margin-bottom: 0.5em;
-            overflow-wrap: break-word;
         }
 
         .prose li {
             margin-bottom: 0.25em;
             white-space: normal;
-            overflow-wrap: break-word;
         }
 
         .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
             color: var(--text-primary);
-        }
-
-        .progress-bar {
-            margin-top: 1rem;
         }
     </style>
 </head>
@@ -593,7 +610,7 @@
                     </div>
                     <p style="margin-top: 1rem; font-size: 0.9rem;">You can also upload plant images for disease detection!</p>
                 </div>
-                <div id="progress-bar" class="progress-bar hidden">
+                <div id="progress-bar" class="mt-4 hidden">
                     <div class="w-full bg-gray-200 rounded-full h-2.5">
                         <div id="progress" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
@@ -616,7 +633,7 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'agribot-cache-v6';
+        const CACHE_NAME = 'agribot-cache-v4';
         const urlsToCache = ['/', '/index.html'];
         const registerServiceWorker = async () => {
             if ('serviceWorker' in navigator) {
@@ -752,73 +769,70 @@
             });
         }
 
-        async function typeResponse(text, element, speed = 5) {
+        async function typeResponse(text, element, speed = 10) {
             try {
                 element.innerHTML = '';
+                
+                // Check if text is already HTML (contains HTML tags)
                 const isHTML = /<[a-z][\s\S]*>/i.test(text);
-                let finalHTML, plainText;
-
+                
                 if (isHTML) {
-                    finalHTML = DOMPurify.sanitize(text);
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(finalHTML, 'text/html');
-                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4'))
-                        .map(node => node.textContent)
-                        .join(' ')
-                        .replace(/\s+/g, ' ')
-                        .trim();
+                    // If it's already HTML, sanitize and display directly
+                    const sanitizedHTML = DOMPurify.sanitize(text);
+                    element.innerHTML = sanitizedHTML;
                 } else {
+                    // If it's markdown/plain text, process it
                     const cleanedText = DOMPurify.sanitize(text);
-                    finalHTML = marked.parse(cleanedText);
+                    const htmlContent = marked.parse(cleanedText);
                     const parser = new DOMParser();
-                    const doc = parser.parseFromString(finalHTML, 'text/html');
-                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4'))
-                        .map(node => node.textContent)
-                        .join(' ')
-                        .replace(/\s+/g, ' ')
-                        .trim();
-                }
+                    const doc = parser.parseFromString(htmlContent, 'text/html');
+                    const plainText = doc.body.textContent || doc.body.innerText || '';
 
-                if (!plainText) {
-                    throw new Error('No valid text to display');
-                }
-
-                let currentIndex = 0;
-                let currentText = '';
-
-                const typeChar = () => {
-                    if (currentIndex < plainText.length) {
-                        currentText += plainText[currentIndex];
-                        element.textContent = currentText;
-                        element.scrollTop = element.scrollHeight;
-                        currentIndex++;
-                        setTimeout(typeChar, speed);
-                    } else {
-                        if (isHTML && !text.endsWith('</div>') && text.includes('Treatment')) {
-                            finalHTML += '<p><em>Note: The response appears incomplete. Please try re-uploading the image or contact support.</em></p>';
-                        }
-                        element.innerHTML = `<div class="prose">${finalHTML}</div>`;
-                        const time = document.createElement('div');
-                        time.className = 'message-time';
-                        time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
-                        element.appendChild(time);
-                        chatArea.scrollTop = chatArea.scrollHeight;
+                    if (!plainText.trim()) {
+                        throw new Error('No valid text to display');
                     }
-                };
 
-                setTimeout(typeChar, speed);
-            } catch (error) {
-                console.error('Typing effect error:', error);
-                const isHTML = /<[a-z][\s\S]*>/i.test(text);
-                element.innerHTML = `<div class="prose">${DOMPurify.sanitize(isHTML ? text : marked.parse(text))}</div>`;
+                    let currentIndex = 0;
+                    let currentText = '';
+
+                    const typeChar = () => {
+                        if (currentIndex < plainText.length) {
+                            currentText += plainText[currentIndex];
+                            element.textContent = currentText;
+                            element.scrollTop = element.scrollHeight;
+                            currentIndex++;
+                            setTimeout(typeChar, speed);
+                        } else {
+                            element.innerHTML = `<div class="prose">${htmlContent}</div>`;
+                            chatArea.scrollTop = chatArea.scrollHeight;
+                        }
+                    };
+
+                    setTimeout(typeChar, speed);
+                }
+                
+                // Add timestamp
                 const time = document.createElement('div');
                 time.className = 'message-time';
                 time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
                 element.appendChild(time);
-                addMessage('error', 'Warning: The response may be incomplete or malformed. <a href="#" onclick="sendMessage()">Retry</a>');
+                
+            } catch (error) {
+                console.error('Typing effect error:', error);
+                // Fallback: display content without typing effect
+                const isHTML = /<[a-z][\s\S]*>/i.test(text);
+                if (isHTML) {
+                    element.innerHTML = DOMPurify.sanitize(text);
+                } else {
+                    element.innerHTML = `<div class="prose">${DOMPurify.sanitize(marked.parse(text))}</div>`;
+                }
+                
+                const time = document.createElement('div');
+                time.className = 'message-time';
+                time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
+                element.appendChild(time);
             }
         }
-
         function updateProgress(percent) {
             progressBar.classList.remove('hidden');
             progress.style.width = `${percent}%`;
@@ -960,6 +974,8 @@
                 addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
             }
             
+            const loadingId = addMessage('bot', '', true);
+            
             const formData = new FormData();
             formData.append('region', currentRegion);
             formData.append('language', currentLanguage);
@@ -979,6 +995,8 @@
                     body: formData
                 });
                 updateProgress(50);
+                
+                removeMessage(loadingId);
                 
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
@@ -1014,6 +1032,7 @@
                     await typeResponse(response, lastMessage);
                 }
             } catch (error) {
+                removeMessage(loadingId);
                 updateProgress(100);
                 addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="sendMessage()">Retry</a>`);
             }
@@ -1058,12 +1077,10 @@
             } else {
                 messageContent.innerHTML = DOMPurify.sanitize(content);
                 
-                if (type !== 'bot') {
-                    const time = document.createElement('div');
-                    time.className = 'message-time';
-                    time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
-                    messageContent.appendChild(time);
-                }
+                const time = document.createElement('div');
+                time.className = 'message-time';
+                time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
+                messageContent.appendChild(time);
             }
             
             messageDiv.appendChild(avatar);
