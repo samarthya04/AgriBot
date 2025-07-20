@@ -537,28 +537,12 @@
             overflow-wrap: break-word;
         }
 
-        .prose hr {
-            border: 0;
-            border-top: 1px solid var(--glass-border);
-            margin: 1em 0;
-        }
-
         .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
             color: var(--text-primary);
         }
 
-        .light-theme .prose hr {
-            border-top: 1px solid var(--glass-border);
-        }
-
         .progress-bar {
             margin-top: 1rem;
-        }
-
-        .retry-countdown {
-            font-size: 0.9rem;
-            color: var(--warning);
-            margin-top: 0.5rem;
         }
     </style>
 </head>
@@ -632,7 +616,7 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'agribot-cache-v8';
+        const CACHE_NAME = 'agribot-cache-v6';
         const urlsToCache = ['/', '/index.html'];
         const registerServiceWorker = async () => {
             if ('serviceWorker' in navigator) {
@@ -682,10 +666,6 @@
         let isProcessing = false;
         let currentRegion = 'India';
         let currentLanguage = 'en';
-        let retryTimeout = null;
-        let retryAttempts = 0;
-        const maxRetries = 3;
-        const baseRetryDelay = 5000; // 5 seconds
 
         const chatArea = document.getElementById('chat-area');
         const messageInput = document.getElementById('message-input');
@@ -772,7 +752,7 @@
             });
         }
 
-        async function typeResponse(text, element, speed = 4) {
+        async function typeResponse(text, element, speed = 5) {
             try {
                 element.innerHTML = '';
                 const isHTML = /<[a-z][\s\S]*>/i.test(text);
@@ -782,7 +762,7 @@
                     finalHTML = DOMPurify.sanitize(text);
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(finalHTML, 'text/html');
-                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4, strong'))
+                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4'))
                         .map(node => node.textContent)
                         .join(' ')
                         .replace(/\s+/g, ' ')
@@ -792,7 +772,7 @@
                     finalHTML = marked.parse(cleanedText);
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(finalHTML, 'text/html');
-                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4, strong'))
+                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4'))
                         .map(node => node.textContent)
                         .join(' ')
                         .replace(/\s+/g, ' ')
@@ -814,8 +794,8 @@
                         currentIndex++;
                         setTimeout(typeChar, speed);
                     } else {
-                        if (isHTML && !text.endsWith('</div>') && (text.includes('Treatment') || text.includes('Crop Recommendations'))) {
-                            finalHTML += '<p><em>Note: The response appears incomplete. Please try re-sending the query or contact support.</em></p>';
+                        if (isHTML && !text.endsWith('</div>') && text.includes('Treatment')) {
+                            finalHTML += '<p><em>Note: The response appears incomplete. Please try re-uploading the image or contact support.</em></p>';
                         }
                         element.innerHTML = `<div class="prose">${finalHTML}</div>`;
                         const time = document.createElement('div');
@@ -845,118 +825,6 @@
             if (percent >= 100) setTimeout(() => progressBar.classList.add('hidden'), 500);
         }
 
-        async function retryRequest(fn, endpoint, formData, messageId) {
-            if (retryAttempts >= maxRetries) {
-                removeMessage(messageId);
-                addMessage('error', `Error: Too many requests. Maximum retry attempts reached. Please try again later or <a href="#" onclick="${fn.name}()">retry now</a>.`);
-                resetRetryState();
-                return;
-            }
-
-            const retryAfter = retryAttempts === 0 ? baseRetryDelay : baseRetryDelay * Math.pow(2, retryAttempts);
-            const message = `Rate limit exceeded. Retrying in <span class="retry-countdown">${Math.round(retryAfter / 1000)}</span> seconds... <a href="#" onclick="cancelRetry()">Cancel</a>`;
-            const errorId = addMessage('error', message);
-
-            const countdownElement = document.querySelector(`#message-${errorId} .retry-countdown`);
-            let remainingTime = Math.round(retryAfter / 1000);
-
-            const countdown = setInterval(() => {
-                remainingTime--;
-                if (countdownElement) {
-                    countdownElement.textContent = remainingTime;
-                }
-                if (remainingTime <= 0) {
-                    clearInterval(countdown);
-                }
-            }, 1000);
-
-            retryTimeout = setTimeout(async () => {
-                removeMessage(errorId);
-                retryAttempts++;
-                try {
-                    updateProgress(10);
-                    const res = await fetch(endpoint, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    updateProgress(50);
-
-                    if (res.status === 429) {
-                        const retryAfterHeader = res.headers.get('Retry-After');
-                        const delay = retryAfterHeader ? parseInt(retryAfterHeader) * 1000 : baseRetryDelay * Math.pow(2, retryAttempts);
-                        await retryRequest(fn, endpoint, formData, messageId);
-                        return;
-                    }
-
-                    if (!res.ok) {
-                        throw new Error(`HTTP error! status: ${res.status}`);
-                    }
-
-                    const data = await res.json();
-                    updateProgress(100);
-
-                    removeMessage(messageId);
-                    resetRetryState();
-
-                    if (data.error) {
-                        addMessage('error', data.error);
-                    } else if (endpoint === '/upload') {
-                        const response = `
-                            <div class="prose">
-                                <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
-                                <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                                    <p><strong>Plant:</strong> ${data.plant || 'Unknown'} (Confidence: ${data.plant_confidence || 'N/A'})</p>
-                                    <p><strong>Scientific Name:</strong> ${data.scientific_name || 'Not identified'}</p>
-                                    <p><strong>Detected Issue:</strong> ${data.disease || 'None'} (Confidence: ${data.disease_confidence || 'N/A'})</p>
-                                </div>
-                                <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
-                                <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
-                                    ${marked.parse(data.remedy || 'No treatment recommendations available.')}
-                                </div>
-                            </div>
-                        `;
-                        addMessage('bot', '');
-                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
-                        await typeResponse(response, lastMessage);
-                    } else {
-                        const response = data.response || 'No response received.';
-                        addMessage('bot', '');
-                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
-                        await typeResponse(response, lastMessage);
-                    }
-                } catch (error) {
-                    removeMessage(messageId);
-                    if (error.message.includes('429')) {
-                        await retryRequest(fn, endpoint, formData, messageId);
-                    } else {
-                        resetRetryState();
-                        addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="${fn.name}()">Retry</a>`);
-                    }
-                }
-            }, retryAfter);
-        }
-
-        function cancelRetry() {
-            if (retryTimeout) {
-                clearTimeout(retryTimeout);
-                retryTimeout = null;
-                retryAttempts = 0;
-                isProcessing = false;
-                sendBtn.disabled = false;
-                messageInput.focus();
-            }
-        }
-
-        function resetRetryState() {
-            retryAttempts = 0;
-            if (retryTimeout) {
-                clearTimeout(retryTimeout);
-                retryTimeout = null;
-            }
-            isProcessing = false;
-            sendBtn.disabled = false;
-        }
-
         async function setPreferences() {
             const region = regionInput.value.trim() || 'India';
             const language = languageSelect.value;
@@ -968,8 +836,6 @@
             formData.append('region', region);
             formData.append('language', language);
             
-            const messageId = addMessage('user', `Updating preferences: Region - ${region}, Language - ${getLanguageName(language)}`);
-            
             try {
                 updateProgress(10);
                 const res = await fetch('/set_prefs', {
@@ -977,36 +843,22 @@
                     body: formData
                 });
                 updateProgress(50);
-
-                if (res.status === 429) {
-                    await retryRequest(setPreferences, '/set_prefs', formData, messageId);
-                    return;
-                }
-
                 if (!res.ok) throw new Error(`Failed to set preferences: ${res.status}`);
                 const data = await res.json();
                 updateProgress(100);
-
                 if (data.status === 'success') {
                     localStorage.setItem('userPrefs', JSON.stringify({
                         region: region,
                         language: language
                     }));
-                    removeMessage(messageId);
                     addMessage('user', `Preferences updated: Region - ${region}, Language - ${getLanguageName(language)}`);
                     addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`);
                 } else {
-                    removeMessage(messageId);
                     addMessage('error', `Error: ${data.error || 'Unknown error'}`);
                 }
             } catch (error) {
-                removeMessage(messageId);
                 updateProgress(100);
-                if (error.message.includes('429')) {
-                    await retryRequest(setPreferences, '/set_prefs', formData, messageId);
-                } else {
-                    addMessage('error', `Error setting preferences: ${error.message}. <a href="#" onclick="setPreferences()">Retry</a>`);
-                }
+                addMessage('error', `Error setting preferences: ${error.message}. <a href="#" onclick="setPreferences()">Retry</a>`);
             }
         }
 
@@ -1100,13 +952,12 @@
                 welcomeMessage.remove();
             }
             
-            let messageId;
             if (message) {
-                messageId = addMessage('user', message);
+                addMessage('user', message);
             }
             
             if (hasImages) {
-                messageId = addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
+                addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
             }
             
             const formData = new FormData();
@@ -1129,20 +980,12 @@
                 });
                 updateProgress(50);
                 
-                if (res.status === 429) {
-                    await retryRequest(sendMessage, endpoint, formData, messageId);
-                    return;
-                }
-                
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
                 }
                 
                 const data = await res.json();
                 updateProgress(100);
-                
-                removeMessage(messageId);
-                resetRetryState();
                 
                 if (data.error) {
                     addMessage('error', data.error);
@@ -1172,13 +1015,7 @@
                 }
             } catch (error) {
                 updateProgress(100);
-                if (error.message.includes('429')) {
-                    await retryRequest(sendMessage, endpoint, formData, messageId);
-                } else {
-                    removeMessage(messageId);
-                    resetRetryState();
-                    addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="sendMessage()">Retry</a>`);
-                }
+                addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="sendMessage()">Retry</a>`);
             }
             
             messageInput.value = '';
@@ -1186,7 +1023,8 @@
             uploadedImages = [];
             imagePreview.innerHTML = '';
             imageInput.value = '';
-            resetRetryState();
+            isProcessing = false;
+            sendBtn.disabled = false;
             messageInput.focus();
         }
 
