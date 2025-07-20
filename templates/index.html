@@ -537,8 +537,18 @@
             overflow-wrap: break-word;
         }
 
+        .prose hr {
+            border: 0;
+            border-top: 1px solid var(--glass-border);
+            margin: 1em 0;
+        }
+
         .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
             color: var(--text-primary);
+        }
+
+        .light-theme .prose hr {
+            border-top: 1px solid var(--glass-border);
         }
 
         .progress-bar {
@@ -616,7 +626,7 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'agribot-cache-v6';
+        const CACHE_NAME = 'agribot-cache-v7';
         const urlsToCache = ['/', '/index.html'];
         const registerServiceWorker = async () => {
             if ('serviceWorker' in navigator) {
@@ -752,7 +762,7 @@
             });
         }
 
-        async function typeResponse(text, element, speed = 5) {
+        async function typeResponse(text, element, speed = 4) {
             try {
                 element.innerHTML = '';
                 const isHTML = /<[a-z][\s\S]*>/i.test(text);
@@ -762,7 +772,7 @@
                     finalHTML = DOMPurify.sanitize(text);
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(finalHTML, 'text/html');
-                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4'))
+                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4, strong'))
                         .map(node => node.textContent)
                         .join(' ')
                         .replace(/\s+/g, ' ')
@@ -772,7 +782,7 @@
                     finalHTML = marked.parse(cleanedText);
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(finalHTML, 'text/html');
-                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4'))
+                    plainText = Array.from(doc.body.querySelectorAll('p, li, h1, h2, h3, h4, strong'))
                         .map(node => node.textContent)
                         .join(' ')
                         .replace(/\s+/g, ' ')
@@ -794,8 +804,8 @@
                         currentIndex++;
                         setTimeout(typeChar, speed);
                     } else {
-                        if (isHTML && !text.endsWith('</div>') && text.includes('Treatment')) {
-                            finalHTML += '<p><em>Note: The response appears incomplete. Please try re-uploading the image or contact support.</em></p>';
+                        if (isHTML && !text.endsWith('</div>') && (text.includes('Treatment') || text.includes('Crop Recommendations'))) {
+                            finalHTML += '<p><em>Note: The response appears incomplete. Please try re-sending the query or contact support.</em></p>';
                         }
                         element.innerHTML = `<div class="prose">${finalHTML}</div>`;
                         const time = document.createElement('div');
