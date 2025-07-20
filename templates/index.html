@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌾</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
     <style>
@@ -49,7 +50,7 @@
             bottom: 0;
             background: 
                 radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at iks 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
             pointer-events: none;
             z-index: -1;
         }
@@ -482,6 +483,53 @@
                 radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
         }
 
+        .retry-message {
+            background: var(--warning);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .retry-btn {
+            background: white;
+            color: var(--warning);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+            font-weight: 600;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.online {
+            background: var(--success);
+            color: white;
+        }
+
+        .connection-status.offline {
+            background: var(--error);
+            color: white;
+        }
+
+        .connection-status.rate-limited {
+            background: var(--warning);
+            color: white;
+        }
+
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -513,6 +561,12 @@
             
             .message-content {
                 max-width: 85%;
+            }
+
+            .connection-status {
+                top: 0.5rem;
+                right: 0.5rem;
+                font-size: 0.75rem;
             }
         }
 
@@ -560,6 +614,9 @@
     </style>
 </head>
 <body>
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status online">🟢 Online</div>
+
     <div class="container">
         <div class="header">
             <h1>🌾 AgriBot</h1>
@@ -629,8 +686,32 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'agribot-cache-v2';
+        // Enhanced error handling and retry logic
+        let isLightTheme = false;
+        let uploadedImages = [];
+        let isProcessing = false;
+        let currentRegion = 'India';
+        let currentLanguage = 'en';
+        let retryCount = 0;
+        let maxRetries = 3;
+        let retryDelay = 1000; // Start with 1 second
+
+        const chatArea = document.getElementById('chat-area');
+        const messageInput = document.getElementById('message-input');
+        const imageInput = document.getElementById('image-input');
+        const imagePreview = document.getElementById('image-preview');
+        const sendBtn = document.getElementById('send-btn');
+        const regionInput = document.getElementById('region');
+        const languageSelect = document.getElementById('language');
+        const themeToggle = document.getElementById('theme-toggle');
+        const progressBar = document.getElementById('progress-bar');
+        const progress = document.getElementById('progress');
+        const connectionStatus = document.getElementById('connection-status');
+
+        // Service Worker Registration with improved caching
+        const CACHE_NAME = 'agribot-cache-v3';
         const urlsToCache = ['/', '/index.html'];
+        
         const registerServiceWorker = async () => {
             if ('serviceWorker' in navigator) {
                 try {
@@ -644,9 +725,18 @@
                                 );
                             });
                             self.addEventListener('fetch', event => {
+                                if (event.request.url.includes('/favicon') || 
+                                    event.request.url.includes('.ico') || 
+                                    event.request.url.includes('.png')) {
+                                    event.respondWith(
+                                        new Response('', { status: 204 })
+                                    );
+                                    return;
+                                }
                                 event.respondWith(
                                     caches.match(event.request)
                                         .then(response => response || fetch(event.request))
+                                        .catch(() => new Response('Offline', { status: 503 }))
                                 );
                             });
                             self.addEventListener('activate', event => {
@@ -666,32 +756,126 @@
                             `
                         ], { type: 'application/javascript' }))
                     );
-                    console.log('Service Worker registered');
+                    console.log('Service Worker registered successfully');
                 } catch (err) {
                     console.error('Service Worker registration failed:', err);
                 }
             }
         };
-        registerServiceWorker();
 
-        let isLightTheme = false;
-        let uploadedImages = [];
-        let isProcessing = false;
-        let currentRegion = 'India';
-        let currentLanguage = 'en';
+        // Connection monitoring
+        function updateConnectionStatus(status) {
+            const statusMap = {
+                'online': { icon: '🟢', text: 'Online', class: 'online' },
+                'offline': { icon: '🔴', text: 'Offline', class: 'offline' },
+                'rate-limited': { icon: '🟡', text: 'Rate Limited', class: 'rate-limited' },
+                'error': { icon: '⚠️', text: 'Connection Error', class: 'offline' }
+            };
+            
+            const config = statusMap[status] || statusMap['error'];
+            connectionStatus.innerHTML = `${config.icon} ${config.text}`;
+            connectionStatus.className = `connection-status ${config.class}`;
+        }
 
-        const chatArea = document.getElementById('chat-area');
-        const messageInput = document.getElementById('message-input');
-        const imageInput = document.getElementById('image-input');
-        const imagePreview = document.getElementById('image-preview');
-        const sendBtn = document.getElementById('send-btn');
-        const regionInput = document.getElementById('region');
-        const languageSelect = document.getElementById('language');
-        const themeToggle = document.getElementById('theme-toggle');
-        const progressBar = document.getElementById('progress-bar');
-        const progress = document.getElementById('progress');
+        // Enhanced fetch with retry logic
+        async function fetchWithRetry(url, options = {}, attempt = 1) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (response.status === 429) {
+                    updateConnectionStatus('rate-limited');
+                    if (attempt < maxRetries) {
+                        const delay = retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                        addMessage('bot', `Rate limited. Retrying in ${delay/1000} seconds... (Attempt ${attempt}/${maxRetries})`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return fetchWithRetry(url, options, attempt + 1);
+                    } else {
+                        throw new Error('Rate limit exceeded. Please wait a few minutes before trying again.');
+                    }
+                }
+
+                if (response.status >= 500) {
+                    updateConnectionStatus('error');
+                    if (attempt < maxRetries) {
+                        const delay = retryDelay * Math.pow(2, attempt - 1);
+                        addMessage('bot', `Server error. Retrying in ${delay/1000} seconds... (Attempt ${attempt}/${maxRetries})`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return fetchWithRetry(url, options, attempt + 1);
+                    }
+                }
+
+                if (response.ok) {
+                    updateConnectionStatus('online');
+                    retryCount = 0;
+                }
+
+                return response;
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout. Please try again.');
+                }
+                
+                updateConnectionStatus('error');
+                
+                if (attempt < maxRetries) {
+                    const delay = retryDelay * Math.pow(2, attempt - 1);
+                    addMessage('bot', `Connection error. Retrying in ${delay/1000} seconds... (Attempt ${attempt}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, attempt + 1);
+                }
+                throw error;
+            }
+        }
+
+        // Complete the compressImage function
+        async function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                img.onload = () => {
+                    // Calculate new dimensions (max 800px)
+                    const maxSize = 800;
+                    let { width, height } = img;
+                    
+                    if (width > height) {
+                        if (width > maxSize) {
+                            height = (height * maxSize) / width;
+                            width = maxSize;
+                        }
+                    } else {
+                        if (height > maxSize) {
+                            width = (width * maxSize) / height;
+                            height = maxSize;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(resolve, 'image/jpeg', 0.8);
+                };
+                
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
+            registerServiceWorker();
+            
+            // Load saved preferences
             const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
             if (savedPrefs.region) {
                 regionInput.value = savedPrefs.region;
@@ -702,184 +886,268 @@
                 currentLanguage = savedPrefs.language;
             }
 
-            messageInput.addEventListener('input', autoResize);
-            
-            messageInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                isLightTheme = true;
+                document.body.classList.add('light-theme');
+                themeToggle.textContent = '☀️';
+            }
 
-            imageInput.addEventListener('change', handleImageUpload);
+            // Initialize connection monitoring
+            updateConnectionStatus(navigator.onLine ? 'online' : 'offline');
             
-            themeToggle.addEventListener('click', toggleTheme);
-
-            setPreferences();
+            window.addEventListener('online', () => updateConnectionStatus('online'));
+            window.addEventListener('offline', () => updateConnectionStatus('offline'));
         });
 
-        function autoResize() {
-            messageInput.style.height = 'auto';
-            messageInput.style.height = messageInput.scrollHeight + 'px';
-        }
-
-        function toggleTheme() {
+        // Theme toggle functionality
+        themeToggle.addEventListener('click', () => {
             isLightTheme = !isLightTheme;
-            document.body.classList.toggle('light-theme', isLightTheme);
+            document.body.classList.toggle('light-theme');
             themeToggle.textContent = isLightTheme ? '☀️' : '🌙';
+            localStorage.setItem('theme', isLightTheme ? 'light' : 'dark');
+        });
+
+        // Set preferences
+        function setPreferences() {
+            currentRegion = regionInput.value.trim() || 'India';
+            currentLanguage = languageSelect.value || 'en';
+            
+            localStorage.setItem('userPrefs', JSON.stringify({
+                region: currentRegion,
+                language: currentLanguage
+            }));
+
+            addMessage('bot', `✅ Preferences updated! Region: ${currentRegion}, Language: ${currentLanguage === 'en' ? 'English' : languageSelect.selectedOptions[0].text}`);
         }
 
-        async function compressImage(file) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                img.src = URL.createObjectURL(file);
-                img.onload = () => {
-                    const maxWidth = 400;
-                    const maxHeight = 300;
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > height) {
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        }
-                    } else {
-                        if (height > maxHeight) {
-                            width = Math.round((width * maxHeight) / height);
-                            height = maxHeight;
-                        }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    canvas.toBlob(blob => {
-                        resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
-                        URL.revokeObjectURL(img.src);
-                    }, 'image/jpeg', 0.85);
-                };
-                img.onerror = reject;
-            });
-        }
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
 
-        async function typeResponse(text, element, speed = 20) {
-            element.innerHTML = '';
-            const plainText = marked.parse(text).replace(/<[^>]+>/g, '');
-            for (let i = 0; i < plainText.length; i++) {
-                element.textContent += plainText.charAt(i);
-                await new Promise(resolve => setTimeout(resolve, speed));
-                element.scrollTop = element.scrollHeight;
+        // Enter key to send message
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
             }
-            element.innerHTML = `<div class="prose">${marked.parse(text)}</div>`;
-            const time = document.createElement('div');
-            time.className = 'message-time';
-            time.textContent = new Date().toLocaleTimeString();
-            element.appendChild(time);
+        });
+
+        // Image upload handling
+        imageInput.addEventListener('change', async function(e) {
+            const files = Array.from(e.target.files);
+            
+            for (const file of files) {
+                if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                    addMessage('error', 'Image too large. Please upload images smaller than 10MB.');
+                    continue;
+                }
+
+                try {
+                    const compressedFile = await compressImage(file);
+                    uploadedImages.push(compressedFile);
+                    displayImagePreview(compressedFile);
+                } catch (error) {
+                    addMessage('error', 'Failed to process image. Please try again.');
+                }
+            }
+            
+            e.target.value = ''; // Reset input
+        });
+
+        function displayImagePreview(file) {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+            
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.alt = 'Preview';
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.onclick = () => {
+                const index = uploadedImages.indexOf(file);
+                if (index > -1) {
+                    uploadedImages.splice(index, 1);
+                }
+                previewItem.remove();
+                URL.revokeObjectURL(img.src);
+            };
+            
+            previewItem.appendChild(img);
+            previewItem.appendChild(removeBtn);
+            imagePreview.appendChild(previewItem);
+        }
+
+        function addMessage(type, content, showTime = true) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = type === 'user' ? '👤' : type === 'error' ? '⚠️' : '🌾';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (type === 'bot' && typeof content === 'string' && content.includes('\n')) {
+                // Process markdown-like content
+                const processedContent = document.createElement('div');
+                processedContent.className = 'prose';
+                processedContent.innerHTML = marked.parse(content);
+                messageContent.appendChild(processedContent);
+            } else {
+                messageContent.textContent = content;
+            }
+            
+            if (showTime) {
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = new Date().toLocaleTimeString();
+                messageContent.appendChild(timeDiv);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            
+            // Remove welcome message if it exists
+            const welcomeMessage = document.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+            
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function showLoading() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.innerHTML = '<div class="loading-spinner"></div><span>AgriBot is thinking...</span>';
+            chatArea.appendChild(loadingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('loading-indicator');
+            if (loading) {
+                loading.remove();
+            }
         }
 
         function updateProgress(percent) {
-            progressBar.classList.remove('hidden');
-            progress.style.width = `${percent}%`;
-            if (percent >= 100) setTimeout(() => progressBar.classList.add('hidden'), 500);
+            if (progressBar && progress) {
+                progressBar.classList.remove('hidden');
+                progress.style.width = percent + '%';
+                
+                if (percent >= 100) {
+                    setTimeout(() => {
+                        progressBar.classList.add('hidden');
+                        progress.style.width = '0%';
+                    }, 1000);
+                }
+            }
         }
 
-        async function setPreferences() {
-            const region = regionInput.value.trim() || 'India';
-            const language = languageSelect.value;
+        async function sendMessage() {
+            const message = messageInput.value.trim();
             
-            currentRegion = region;
-            currentLanguage = language;
+            if (!message && uploadedImages.length === 0) return;
+            if (isProcessing) return;
             
-            const formData = new FormData();
-            formData.append('region', region);
-            formData.append('language', language);
+            isProcessing = true;
+            sendBtn.disabled = true;
             
             try {
-                updateProgress(10);
-                const res = await fetch('/set_prefs', {
+                // Add user message
+                if (message) {
+                    addMessage('user', message);
+                }
+                
+                // Add image indicators
+                if (uploadedImages.length > 0) {
+                    addMessage('user', `📷 ${uploadedImages.length} image(s) uploaded for analysis`);
+                }
+                
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                
+                showLoading();
+                
+                // Prepare the request
+                const formData = new FormData();
+                formData.append('message', message || 'Analyze the uploaded images for plant diseases or issues');
+                formData.append('region', currentRegion);
+                formData.append('language', currentLanguage);
+                
+                // Add images
+                uploadedImages.forEach((image, index) => {
+                    formData.append(`image_${index}`, image, `image_${index}.jpg`);
+                });
+                
+                // Simulate API call (replace with your actual API endpoint)
+                const response = await fetchWithRetry('/api/chat', {
                     method: 'POST',
                     body: formData
                 });
-                updateProgress(50);
-                if (!res.ok) throw new Error('Failed to set preferences');
-                const data = await res.json();
-                updateProgress(100);
-                if (data.status === 'success') {
-                    localStorage.setItem('userPrefs', JSON.stringify({
-                        region: region,
-                        language: language
-                    }));
-                    addMessage('user', `Preferences updated: Region - ${region}, Language - ${getLanguageName(language)}`);
-                    addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`);
-                } else {
-                    addMessage('error', `Error: ${data.error}`);
+                
+                hideLoading();
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
                 }
+                
+                const data = await response.json();
+                addMessage('bot', data.response || 'I received your message but couldn\'t generate a response. Please try again.');
+                
             } catch (error) {
-                updateProgress(100);
-                addMessage('error', `Error setting preferences: ${error.message}. <a href="#" onclick="setPreferences()">Retry</a>`);
-            }
-        }
-
-        function getLanguageName(code) {
-            const languages = {
-                'en': 'English',
-                'hi': 'Hindi',
-                'ta': 'Tamil',
-                'bn': 'Bengali',
-                'te': 'Telugu',
-                'gu': 'Gujarati',
-                'mr': 'Marathi',
-                'pa': 'Punjabi',
-                'or': 'Odia'
-            };
-            return languages[code] || 'English';
-        }
-
-        async function handleImageUpload(e) {
-            const files = Array.from(e.target.files);
-            
-            if (files.length > 3) {
-                addMessage('error', 'Please upload a maximum of 3 images.');
-                imageInput.value = '';
-                imagePreview.innerHTML = '';
-                return;
-            }
-            
-            uploadedImages = [];
-            imagePreview.innerHTML = '';
-            updateProgress(10);
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-                    const compressed = await compressImage(file);
-                    uploadedImages.push(compressed);
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const previewItem = document.createElement('div');
-                        previewItem.className = 'preview-item';
-                        previewItem.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview">
-                            <button class="remove-btn" onclick="removeImage(${i})">×</button>
-                        `;
-                        imagePreview.appendChild(previewItem);
-                    };
-                    reader.readAsDataURL(file);
-                    updateProgress(10 + (i + 1) * (80 / files.length));
+                hideLoading();
+                console.error('Error:', error);
+                
+                let errorMessage = 'Sorry, I encountered an error. ';
+                if (error.message.includes('Rate limit')) {
+                    errorMessage += 'Rate limit exceeded. Please wait a few minutes before trying again.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage += 'Request timeout. Please check your connection and try again.';
                 } else {
-                    addMessage('error', `Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
+                    errorMessage += 'Please check your connection and try again.';
                 }
+                
+                addMessage('error', errorMessage);
+                
+                // Add retry button for failed requests
+                if (retryCount < maxRetries) {
+                    const retryDiv = document.createElement('div');
+                    retryDiv.className = 'retry-message';
+                    retryDiv.innerHTML = `
+                        <span>Failed to send message.</span>
+                        <button class="retry-btn" onclick="retryLastMessage()">🔄 Retry</button>
+                    `;
+                    chatArea.appendChild(retryDiv);
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                
+                // Clear uploaded images
+                uploadedImages = [];
+                imagePreview.innerHTML = '';
             }
-            updateProgress(100);
         }
 
-        function removeImage(index) {
-            uploadedImages.splice(index, 1);
-            imagePreview.children[index].remove();
-            if (uploadedImages.length === 0) {
-                imageInput.value = '';
+        function retryLastMessage() {
+            const retryMessage = document.querySelector('.retry-message');
+            if (retryMessage) {
+                retryMessage.remove();
             }
+            sendMessage();
         }
 
         function sendQuickMessage(message) {
@@ -887,163 +1155,16 @@
             sendMessage();
         }
 
-        async function sendMessage() {
-            if (isProcessing) return;
-            
-            const message = messageInput.value.trim();
-            const hasImages = uploadedImages.length > 0;
-            
-            if (!message && !hasImages) {
-                messageInput.focus();
-                return;
-            }
-            
-            isProcessing = true;
-            sendBtn.disabled = true;
-            
-            const welcomeMessage = document.querySelector('.welcome-message');
-            if (welcomeMessage) {
-                welcomeMessage.remove();
-            }
-            
-            if (message) {
-                addMessage('user', message);
-            }
-            
-            if (hasImages) {
-                addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
-            }
-            
-            const loadingId = addMessage('bot', '', true);
-            
-            const formData = new FormData();
-            if (message) {
-                formData.append('query', message);
-            }
-            for (let i = 0; i < uploadedImages.length; i++) {
-                formData.append('image', uploadedImages[i]);
-                updateProgress(10 + (i + 1) * (80 / uploadedImages.length));
-            }
-            
-            try {
-                const endpoint = hasImages ? '/upload' : '/chat';
-                updateProgress(10);
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    body: formData
-                });
-                updateProgress(50);
-                
-                removeMessage(loadingId);
-                
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                
-                const data = await res.json();
-                updateProgress(100);
-                
-                if (data.error) {
-                    addMessage('error', data.error);
-                } else if (hasImages) {
-                    const response = `
-                        <div class="prose">
-                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
-                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                                <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
-                                <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
-                                <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
-                            </div>
-                            <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
-                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
-                                ${marked.parse(data.remedy)}
-                            </div>
-                        </div>
-                    `;
-                    if (data.typing_effect) {
-                        addMessage('bot', '');
-                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
-                        await typeResponse(response, lastMessage);
-                    } else {
-                        addMessage('bot', response);
-                    }
-                } else {
-                    const response = data.response;
-                    if (data.typing_effect) {
-                        addMessage('bot', '');
-                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
-                        await typeResponse(response, lastMessage);
-                    } else {
-                        addMessage('bot', `<div class="prose">${marked.parse(response)}</div>`);
-                    }
-                }
-            } catch (error) {
-                removeMessage(loadingId);
-                updateProgress(100);
-                addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="sendMessage()">Retry</a>`);
-            }
-            
-            messageInput.value = '';
-            messageInput.style.height = 'auto';
-            uploadedImages = [];
-            imagePreview.innerHTML = '';
-            imageInput.value = '';
-            isProcessing = false;
-            sendBtn.disabled = false;
-            messageInput.focus();
-        }
+        // Error handling for uncaught errors
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            addMessage('error', 'An unexpected error occurred. Please refresh the page and try again.');
+        });
 
-        function addMessage(type, content, isLoading = false) {
-            const messageId = Date.now();
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.id = `message-${messageId}`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            
-            if (type === 'user') {
-                avatar.textContent = '🙎';
-            } else if (type === 'bot') {
-                avatar.textContent = '🤖';
-            } else if (type === 'error') {
-                avatar.textContent = '⚠️';
-            }
-            
-            const messageContent = document.createElement('div');
-            messageContent.className = 'message-content';
-            
-            if (isLoading) {
-                messageContent.innerHTML = `
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <span>Processing...</span>
-                    </div>
-                `;
-            } else {
-                messageContent.innerHTML = content;
-                
-                const time = document.createElement('div');
-                time.className = 'message-time';
-                time.textContent = new Date().toLocaleTimeString();
-                messageContent.appendChild(time);
-            }
-            
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(messageContent);
-            
-            chatArea.appendChild(messageDiv);
-            chatArea.scrollTop = chatArea.scrollHeight;
-            
-            return messageId;
-        }
-
-        function removeMessage(messageId) {
-            const message = document.getElementById(`message-${messageId}`);
-            if (message) {
-                message.remove();
-            }
-        }
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            event.preventDefault();
+        });
     </script>
 </body>
 </html>
