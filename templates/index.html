@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
+    <!-- Base64 favicon to reduce server requests; add favicon.ico to project root for fallback -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌾</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
@@ -686,14 +687,14 @@
     </div>
 
     <script>
-        // Enhanced error handling and retry logic
+        // Enhanced error handling and favicon fix
         let isLightTheme = false;
         let uploadedImages = [];
         let isProcessing = false;
         let currentRegion = 'India';
         let currentLanguage = 'en';
         let retryCount = 0;
-        let maxRetries = 3;
+        const maxRetries = 3;
         let retryDelay = 1000; // Start with 1 second
 
         const chatArea = document.getElementById('chat-area');
@@ -708,10 +709,10 @@
         const progress = document.getElementById('progress');
         const connectionStatus = document.getElementById('connection-status');
 
-        // Service Worker Registration with improved caching
-        const CACHE_NAME = 'agribot-cache-v3';
+        // Service Worker with favicon handling
+        const CACHE_NAME = 'agribot-cache-v4';
         const urlsToCache = ['/', '/index.html'];
-        
+
         const registerServiceWorker = async () => {
             if ('serviceWorker' in navigator) {
                 try {
@@ -725,9 +726,10 @@
                                 );
                             });
                             self.addEventListener('fetch', event => {
-                                if (event.request.url.includes('/favicon') || 
-                                    event.request.url.includes('.ico') || 
-                                    event.request.url.includes('.png')) {
+                                const url = new URL(event.request.url);
+                                if (url.pathname.includes('/favicon') || 
+                                    url.pathname.endsWith('.ico') || 
+                                    url.pathname.endsWith('.png')) {
                                     event.respondWith(
                                         new Response('', { status: 204 })
                                     );
@@ -777,7 +779,7 @@
             connectionStatus.className = `connection-status ${config.class}`;
         }
 
-        // Enhanced fetch with retry logic
+        // Enhanced fetch with 404 and retry logic
         async function fetchWithRetry(url, options = {}, attempt = 1) {
             try {
                 const controller = new AbortController();
@@ -793,13 +795,18 @@
                 if (response.status === 429) {
                     updateConnectionStatus('rate-limited');
                     if (attempt < maxRetries) {
-                        const delay = retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                        const retryAfter = response.headers.get('Retry-After');
+                        const delay = retryAfter ? parseInt(retryAfter) * 1000 : retryDelay * Math.pow(2, attempt - 1);
                         addMessage('bot', `Rate limited. Retrying in ${delay/1000} seconds... (Attempt ${attempt}/${maxRetries})`);
                         await new Promise(resolve => setTimeout(resolve, delay));
                         return fetchWithRetry(url, options, attempt + 1);
                     } else {
                         throw new Error('Rate limit exceeded. Please wait a few minutes before trying again.');
                     }
+                }
+
+                if (response.status === 404) {
+                    throw new Error('API endpoint not found. Please check if the server is running correctly.');
                 }
 
                 if (response.status >= 500) {
@@ -835,7 +842,7 @@
             }
         }
 
-        // Complete the compressImage function
+        // Compress image
         async function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -843,7 +850,6 @@
                 const ctx = canvas.getContext('2d');
                 
                 img.onload = () => {
-                    // Calculate new dimensions (max 800px)
                     const maxSize = 800;
                     let { width, height } = img;
                     
@@ -862,7 +868,6 @@
                     canvas.width = width;
                     canvas.height = height;
                     
-                    // Draw and compress
                     ctx.drawImage(img, 0, 0, width, height);
                     canvas.toBlob(resolve, 'image/jpeg', 0.8);
                 };
@@ -875,7 +880,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             registerServiceWorker();
             
-            // Load saved preferences
             const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
             if (savedPrefs.region) {
                 regionInput.value = savedPrefs.region;
@@ -886,7 +890,6 @@
                 currentLanguage = savedPrefs.language;
             }
 
-            // Load saved theme
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 isLightTheme = true;
@@ -894,14 +897,12 @@
                 themeToggle.textContent = '☀️';
             }
 
-            // Initialize connection monitoring
             updateConnectionStatus(navigator.onLine ? 'online' : 'offline');
             
             window.addEventListener('online', () => updateConnectionStatus('online'));
             window.addEventListener('offline', () => updateConnectionStatus('offline'));
         });
 
-        // Theme toggle functionality
         themeToggle.addEventListener('click', () => {
             isLightTheme = !isLightTheme;
             document.body.classList.toggle('light-theme');
@@ -909,7 +910,6 @@
             localStorage.setItem('theme', isLightTheme ? 'light' : 'dark');
         });
 
-        // Set preferences
         function setPreferences() {
             currentRegion = regionInput.value.trim() || 'India';
             currentLanguage = languageSelect.value || 'en';
@@ -922,13 +922,11 @@
             addMessage('bot', `✅ Preferences updated! Region: ${currentRegion}, Language: ${currentLanguage === 'en' ? 'English' : languageSelect.selectedOptions[0].text}`);
         }
 
-        // Auto-resize textarea
         messageInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
 
-        // Enter key to send message
         messageInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -936,12 +934,11 @@
             }
         });
 
-        // Image upload handling
         imageInput.addEventListener('change', async function(e) {
             const files = Array.from(e.target.files);
             
             for (const file of files) {
-                if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                if (file.size > 10 * 1024 * 1024) {
                     addMessage('error', 'Image too large. Please upload images smaller than 10MB.');
                     continue;
                 }
@@ -955,7 +952,7 @@
                 }
             }
             
-            e.target.value = ''; // Reset input
+            e.target.value = '';
         });
 
         function displayImagePreview(file) {
@@ -995,10 +992,42 @@
             messageContent.className = 'message-content';
             
             if (type === 'bot' && typeof content === 'string' && content.includes('\n')) {
-                // Process markdown-like content
                 const processedContent = document.createElement('div');
                 processedContent.className = 'prose';
                 processedContent.innerHTML = marked.parse(content);
+                
+                // Typing effect for complex responses
+                const textNodes = [];
+                const collectText = (node) => {
+                    if (node.nodeType === 3) {
+                        textNodes.push(node);
+                    } else {
+                        node.childNodes.forEach(collectText);
+                    }
+                };
+                collectText(processedContent);
+                
+                let currentIndex = 0;
+                textNodes.forEach(node => {
+                    const text = node.textContent;
+                    node.textContent = '';
+                    let i = 0;
+                    const type = () => {
+                        if (i < text.length) {
+                            node.textContent += text[i];
+                            i++;
+                            setTimeout(type, 4);
+                        } else {
+                            currentIndex++;
+                            if (currentIndex < textNodes.length) {
+                                type();
+                            }
+                        }
+                    };
+                    if (currentIndex === 0) type();
+                    else setTimeout(type, currentIndex * 100);
+                });
+                
                 messageContent.appendChild(processedContent);
             } else {
                 messageContent.textContent = content;
@@ -1007,14 +1036,13 @@
             if (showTime) {
                 const timeDiv = document.createElement('div');
                 timeDiv.className = 'message-time';
-                timeDiv.textContent = new Date().toLocaleTimeString();
+                timeDiv.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
                 messageContent.appendChild(timeDiv);
             }
             
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(messageContent);
             
-            // Remove welcome message if it exists
             const welcomeMessage = document.querySelector('.welcome-message');
             if (welcomeMessage) {
                 welcomeMessage.remove();
@@ -1064,12 +1092,10 @@
             sendBtn.disabled = true;
             
             try {
-                // Add user message
                 if (message) {
                     addMessage('user', message);
                 }
                 
-                // Add image indicators
                 if (uploadedImages.length > 0) {
                     addMessage('user', `📷 ${uploadedImages.length} image(s) uploaded for analysis`);
                 }
@@ -1079,19 +1105,16 @@
                 
                 showLoading();
                 
-                // Prepare the request
                 const formData = new FormData();
                 formData.append('message', message || 'Analyze the uploaded images for plant diseases or issues');
                 formData.append('region', currentRegion);
                 formData.append('language', currentLanguage);
                 
-                // Add images
                 uploadedImages.forEach((image, index) => {
                     formData.append(`image_${index}`, image, `image_${index}.jpg`);
                 });
                 
-                // Simulate API call (replace with your actual API endpoint)
-                const response = await fetchWithRetry('/api/chat', {
+                const response = await fetchWithRetry('/chat', {
                     method: 'POST',
                     body: formData
                 });
@@ -1115,13 +1138,14 @@
                     errorMessage += 'Rate limit exceeded. Please wait a few minutes before trying again.';
                 } else if (error.message.includes('timeout')) {
                     errorMessage += 'Request timeout. Please check your connection and try again.';
+                } else if (error.message.includes('not found')) {
+                    errorMessage += 'API endpoint not found. Please ensure the server is configured correctly.';
                 } else {
                     errorMessage += 'Please check your connection and try again.';
                 }
                 
                 addMessage('error', errorMessage);
                 
-                // Add retry button for failed requests
                 if (retryCount < maxRetries) {
                     const retryDiv = document.createElement('div');
                     retryDiv.className = 'retry-message';
@@ -1136,7 +1160,6 @@
                 isProcessing = false;
                 sendBtn.disabled = false;
                 
-                // Clear uploaded images
                 uploadedImages = [];
                 imagePreview.innerHTML = '';
             }
@@ -1155,7 +1178,6 @@
             sendMessage();
         }
 
-        // Error handling for uncaught errors
         window.addEventListener('error', (event) => {
             console.error('Global error:', event.error);
             addMessage('error', 'An unexpected error occurred. Please refresh the page and try again.');
