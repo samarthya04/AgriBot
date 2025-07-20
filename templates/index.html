@@ -633,7 +633,7 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'agribot-cache-v3';
+        const CACHE_NAME = 'agribot-cache-v4';
         const urlsToCache = ['/', '/index.html'];
         const registerServiceWorker = async () => {
             if ('serviceWorker' in navigator) {
@@ -688,7 +688,7 @@
         const messageInput = document.getElementById('message-input');
         const imageInput = document.getElementById('image-input');
         const imagePreview = document.getElementById('image-preview');
-        const sendBtn = document.get soonerButton('send-btn');
+        const sendBtn = document.getElementById('send-btn');
         const regionInput = document.getElementById('region');
         const languageSelect = document.getElementById('language');
         const themeToggle = document.getElementById('theme-toggle');
@@ -769,7 +769,7 @@
             });
         }
 
-        async function typeResponse(text, element, speed = 20) {
+        async function typeResponse(text, element, speed = 10) {
             try {
                 element.innerHTML = '';
                 const cleanedText = DOMPurify.sanitize(text);
@@ -794,21 +794,21 @@
                         element.textContent = currentText;
                         element.scrollTop = element.scrollHeight;
                         currentIndex++;
-                        requestAnimationFrame(typeChar);
+                        setTimeout(typeChar, speed);
                     } else {
                         element.innerHTML = `<div class="prose">${marked.parse(cleanedText)}</div>`;
                         const time = document.createElement('div');
                         time.className = 'message-time';
-                        time.textContent = new Date().toLocaleTimeString();
+                        time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
                         element.appendChild(time);
                         chatArea.scrollTop = chatArea.scrollHeight;
                     }
                 };
 
-                requestAnimationFrame(typeChar);
+                setTimeout(typeChar, speed);
             } catch (error) {
                 console.error('Typing effect error:', error);
-                element.innerHTML = `<div class="prose">${DOMPurify.sanitize(marked.parse(text))}</div><div class="message-time">${new Date().toLocaleTimeString()}</div>`;
+                element.innerHTML = `<div class="prose">${DOMPurify.sanitize(marked.parse(text))}</div><div class="message-time">${new Date().toLocaleTimeString('en-US', { hour12: true })}</div>`;
                 addMessage('error', 'Warning: The response may be incomplete or malformed. Displaying as received.');
             }
         }
@@ -957,6 +957,8 @@
             const loadingId = addMessage('bot', '', true);
             
             const formData = new FormData();
+            formData.append('region', currentRegion);
+            formData.append('language', currentLanguage);
             if (message) {
                 formData.append('query', message);
             }
@@ -1000,22 +1002,14 @@
                             </div>
                         </div>
                     `;
-                    if (data.typing_effect) {
-                        addMessage('bot', '');
-                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
-                        await typeResponse(response, lastMessage);
-                    } else {
-                        addMessage('bot', response);
-                    }
+                    addMessage('bot', '');
+                    const lastMessage = chatArea.lastChild.querySelector('.message-content');
+                    await typeResponse(response, lastMessage);
                 } else {
                     const response = data.response || 'No response received.';
-                    if (data.typing_effect) {
-                        addMessage('bot', '');
-                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
-                        await typeResponse(response, lastMessage);
-                    } else {
-                        addMessage('bot', `<div class="prose">${marked.parse(response)}</div>`);
-                    }
+                    addMessage('bot', '');
+                    const lastMessage = chatArea.lastChild.querySelector('.message-content');
+                    await typeResponse(response, lastMessage);
                 }
             } catch (error) {
                 removeMessage(loadingId);
@@ -1065,7 +1059,7 @@
                 
                 const time = document.createElement('div');
                 time.className = 'message-time';
-                time.textContent = new Date().toLocaleTimeString();
+                time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
                 messageContent.appendChild(time);
             }
             
