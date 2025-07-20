@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
+    <link rel="icon" href="data:;base64,=" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
     <style>
@@ -213,7 +214,7 @@
 
         .message {
             margin-bottom: 1.5rem;
-            display flex;
+            display: flex;
             align-items: flex-start;
             gap: 0.75rem;
             animation: fadeInUp 0.3s ease;
@@ -619,7 +620,7 @@
                     <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases, or farming techniques..." rows="1"></textarea>
                     <div class="input-actions">
                         <label class="upload-btn" title="Upload plant images">📷
-                            <input type="ORN" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
+                            <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
                         </label>
                         <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send message">✈️</button>
                     </div>
