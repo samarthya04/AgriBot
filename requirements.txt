@@ -1,7 +1,10 @@
-flask
+Flask
+werkzeug
+redis
 requests
 python-dotenv
-pillow
+gunicorn
+Pillow
 markdown
 bleach
-gunicorn
+upstash-redis
