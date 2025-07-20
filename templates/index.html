@@ -772,47 +772,67 @@
         async function typeResponse(text, element, speed = 10) {
             try {
                 element.innerHTML = '';
-                const cleanedText = DOMPurify.sanitize(text);
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(marked.parse(cleanedText), 'text/html');
-                const plainText = Array.from(doc.body.childNodes)
-                    .map(node => node.textContent)
-                    .join(' ')
-                    .replace(/\s+/g, ' ')
-                    .trim();
+                
+                // Check if text is already HTML (contains HTML tags)
+                const isHTML = /<[a-z][\s\S]*>/i.test(text);
+                
+                if (isHTML) {
+                    // If it's already HTML, sanitize and display directly
+                    const sanitizedHTML = DOMPurify.sanitize(text);
+                    element.innerHTML = sanitizedHTML;
+                } else {
+                    // If it's markdown/plain text, process it
+                    const cleanedText = DOMPurify.sanitize(text);
+                    const htmlContent = marked.parse(cleanedText);
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(htmlContent, 'text/html');
+                    const plainText = doc.body.textContent || doc.body.innerText || '';
 
-                if (!plainText) {
-                    throw new Error('No valid text to display');
-                }
-
-                let currentIndex = 0;
-                let currentText = '';
-
-                const typeChar = () => {
-                    if (currentIndex < plainText.length) {
-                        currentText += plainText[currentIndex];
-                        element.textContent = currentText;
-                        element.scrollTop = element.scrollHeight;
-                        currentIndex++;
-                        setTimeout(typeChar, speed);
-                    } else {
-                        element.innerHTML = `<div class="prose">${marked.parse(cleanedText)}</div>`;
-                        const time = document.createElement('div');
-                        time.className = 'message-time';
-                        time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
-                        element.appendChild(time);
-                        chatArea.scrollTop = chatArea.scrollHeight;
+                    if (!plainText.trim()) {
+                        throw new Error('No valid text to display');
                     }
-                };
 
-                setTimeout(typeChar, speed);
+                    let currentIndex = 0;
+                    let currentText = '';
+
+                    const typeChar = () => {
+                        if (currentIndex < plainText.length) {
+                            currentText += plainText[currentIndex];
+                            element.textContent = currentText;
+                            element.scrollTop = element.scrollHeight;
+                            currentIndex++;
+                            setTimeout(typeChar, speed);
+                        } else {
+                            element.innerHTML = `<div class="prose">${htmlContent}</div>`;
+                            chatArea.scrollTop = chatArea.scrollHeight;
+                        }
+                    };
+
+                    setTimeout(typeChar, speed);
+                }
+                
+                // Add timestamp
+                const time = document.createElement('div');
+                time.className = 'message-time';
+                time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
+                element.appendChild(time);
+                
             } catch (error) {
                 console.error('Typing effect error:', error);
-                element.innerHTML = `<div class="prose">${DOMPurify.sanitize(marked.parse(text))}</div><div class="message-time">${new Date().toLocaleTimeString('en-US', { hour12: true })}</div>`;
-                addMessage('error', 'Warning: The response may be incomplete or malformed. Displaying as received.');
+                // Fallback: display content without typing effect
+                const isHTML = /<[a-z][\s\S]*>/i.test(text);
+                if (isHTML) {
+                    element.innerHTML = DOMPurify.sanitize(text);
+                } else {
+                    element.innerHTML = `<div class="prose">${DOMPurify.sanitize(marked.parse(text))}</div>`;
+                }
+                
+                const time = document.createElement('div');
+                time.className = 'message-time';
+                time.textContent = new Date().toLocaleTimeString('en-US', { hour12: true });
+                element.appendChild(time);
             }
         }
-
         function updateProgress(percent) {
             progressBar.classList.remove('hidden');
             progress.style.width = `${percent}%`;
