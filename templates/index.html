@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
-   <!-- Favicon with cross-browser support -->
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="alternate icon" type="image/png" href="/favicon.png">
-<link rel="icon" type="image/x-icon" href="/favicon.ico">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <style>
@@ -646,15 +641,17 @@ How can I assist you today?`
                 uploadedImages.push(file);
 
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    const previewItem = document.createElement('div');
-                    previewItem.className = 'preview-item';
-                    previewItem.innerHTML = `
-                        <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
-                        <button class="remove-btn" onclick="removeImage(${index})">&times;</button>
-                    `;
-                    imagePreview.appendChild(previewItem);
-                };
+                (function(index) {
+                    reader.onload = (e) => {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.innerHTML = `
+                            <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
+                            <button class="remove-btn" onclick="removeImage(${index})">×</button>
+                        `;
+                        imagePreview.appendChild(previewItem);
+                    };
+                })(index);
                 reader.readAsDataURL(file);
             });
         }
