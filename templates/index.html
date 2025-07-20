@@ -5,42 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
     <style>
-        /* Base styles and variables for a modern look */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
-            --primary-gradient: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            --secondary-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             --dark-bg: #0f172a;
             --dark-surface: #1e293b;
-            --text-primary-dark: #f1f5f9;
-            --text-secondary-dark: #94a3b8;
-            --light-bg: #f8fafc;
-            --light-surface: #ffffff;
-            --text-primary-light: #0f172a;
-            --text-secondary-light: #475569;
-            --accent: #22c55e;
-            --success: #22c55e;
+            --dark-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --accent: #3b82f6;
+            --success: #10b981;
             --warning: #f59e0b;
             --error: #ef4444;
-            --glass-bg-dark: rgba(30, 41, 59, 0.5);
-            --glass-border-dark: rgba(51, 65, 85, 0.5);
-            --glass-bg-light: rgba(255, 255, 255, 0.7);
-            --glass-border-light: rgba(226, 232, 240, 1);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
             --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
-        /* General body styling */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--dark-bg);
-            color: var(--text-primary-dark);
+            background: var(--dark-bg);
+            color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            position: relative;
         }
 
-        /* Container for the main content */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
         .container {
             max-width: 900px;
             margin: 0 auto;
@@ -49,8 +62,7 @@
             flex-direction: column;
             min-height: 100vh;
         }
-        
-        /* Header styling */
+
         .header {
             text-align: center;
             margin-bottom: 2rem;
@@ -72,20 +84,19 @@
         }
 
         .header p {
-            color: var(--text-secondary-dark);
+            color: var(--text-secondary);
             font-size: 1.1rem;
         }
-        
-        /* Theme toggle button */
+
         .theme-toggle {
             position: absolute;
             top: 0;
             right: 0;
-            background: var(--glass-bg-dark);
-            border: 1px solid var(--glass-border-dark);
-            border-radius: 9999px;
-            width: 48px;
-            height: 48px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -95,35 +106,45 @@
         }
 
         .theme-toggle:hover {
-            background: var(--glass-border-dark);
-            transform: scale(1.1) rotate(15deg);
+            background: var(--glass-border);
+            transform: scale(1.1);
         }
 
-        /* Preferences panel with glassmorphism effect */
         .preferences-panel {
-            background: var(--glass-bg-dark);
-            border: 1px solid var(--glass-border-dark);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             border-radius: 1rem;
             padding: 1.5rem;
             margin-bottom: 2rem;
             backdrop-filter: blur(10px);
             box-shadow: var(--shadow);
-            transition: all 0.3s ease;
         }
 
-        /* Input fields and labels */
+        .preferences-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
         .input-group label {
             font-weight: 600;
-            color: var(--text-secondary-dark);
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
         .input-field {
             background: var(--dark-surface);
-            border: 1px solid var(--glass-border-dark);
+            border: 1px solid var(--glass-border);
             border-radius: 0.5rem;
             padding: 0.75rem;
-            color: var(--text-primary-dark);
+            color: var(--text-primary);
             font-size: 1rem;
             transition: all 0.3s ease;
         }
@@ -131,10 +152,22 @@
         .input-field:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        /* Primary button style */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
         .btn-primary {
             background: var(--primary-gradient);
             color: white;
@@ -142,46 +175,53 @@
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
         }
 
-        /* Chat container styling */
         .chat-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: var(--glass-bg-dark);
-            border: 1px solid var(--glass-border-dark);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             border-radius: 1rem;
             overflow: hidden;
             backdrop-filter: blur(10px);
             box-shadow: var(--shadow);
-            transition: all 0.3s ease;
         }
 
         .chat-area {
             flex: 1;
             padding: 1.5rem;
             overflow-y: auto;
-            max-height: 500px; /* Or adjust as needed */
+            max-height: 500px;
             scroll-behavior: smooth;
         }
 
-        /* Custom scrollbar */
-        .chat-area::-webkit-scrollbar { width: 6px; }
-        .chat-area::-webkit-scrollbar-track { background: transparent; }
-        .chat-area::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-
-        /* Message styling */
-        .message {
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            animation: fadeInUp 0.4s ease-out;
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .message.user { flex-direction: row-reverse; }
+        .chat-area::-webkit-scrollbar-track {
+            background: var(--dark-surface);
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            display flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
 
         .message-avatar {
             width: 40px;
@@ -194,72 +234,100 @@
             flex-shrink: 0;
         }
 
-        .message.user .message-avatar { background: var(--secondary-gradient); }
-        .message.bot .message-avatar { background: var(--primary-gradient); }
-        .message.error .message-avatar { background: var(--error); }
+        .message.user .message-avatar {
+            background: var(--secondary-gradient);
+        }
+
+        .message.bot .message-avatar {
+            background: var(--success-gradient);
+        }
+
+        .message.error .message-avatar {
+            background: var(--error);
+        }
 
         .message-content {
-            max-width: 80%;
+            max-width: 70%;
             padding: 1rem 1.25rem;
             border-radius: 1rem;
             position: relative;
         }
 
         .message.user .message-content {
-            background: var(--dark-surface);
-            color: var(--text-primary-dark);
+            background: var(--primary-gradient);
+            color: white;
             border-bottom-right-radius: 0.25rem;
         }
 
         .message.bot .message-content {
             background: var(--dark-surface);
-            color: var(--text-primary-dark);
+            color: var(--text-primary);
             border-bottom-left-radius: 0.25rem;
         }
-        
-        /* Input panel styling */
-        .input-panel {
-            padding: 1rem;
-            background: var(--dark-surface);
-            border-top: 1px solid var(--glass-border-dark);
-            transition: all 0.3s ease;
+
+        .message.error .message-content {
+            background: var(--error);
+            color: white;
+            border-bottom-left-radius: 0.25rem;
         }
-        
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .input-panel {
+            padding: 1.5rem;
+            background: var(--dark-surface);
+            border-top: 1px solid var(--glass-border);
+        }
+
         .input-container {
             display: flex;
             align-items: flex-end;
-            gap: 0.5rem;
+            gap: 1rem;
             background: var(--dark-bg);
-            border: 1px solid var(--glass-border-dark);
+            border: 1px solid var(--glass-border);
             border-radius: 1rem;
-            padding: 0.5rem 0.75rem;
+            padding: 0.75rem;
             transition: all 0.3s ease;
         }
-        
+
         .input-container:focus-within {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .message-input {
             flex: 1;
             background: transparent;
             border: none;
-            color: var(--text-primary-dark);
+            color: var(--text-primary);
             font-size: 1rem;
             line-height: 1.5;
             resize: none;
-            min-height: 24px;
+            min-height: 20px;
             max-height: 120px;
+            overflow-y: auto;
         }
-        
-        .message-input:focus { outline: none; }
-        .message-input::placeholder { color: var(--text-secondary-dark); }
-        
-        /* Action buttons in input area */
-        .action-btn {
-            background: transparent;
-            border: 1px solid var(--glass-border-dark);
+
+        .message-input:focus {
+            outline: none;
+        }
+
+        .message-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .upload-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             border-radius: 0.5rem;
             width: 40px;
             height: 40px;
@@ -270,26 +338,48 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-            color: var(--text-secondary-dark);
         }
 
-        .action-btn:hover {
-            background: var(--glass-border-dark);
-            color: var(--text-primary-dark);
+        .upload-btn:hover {
+            background: var(--glass-border);
             transform: scale(1.1);
         }
-        
+
+        .upload-btn input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
         .send-btn {
             background: var(--primary-gradient);
+            border: none;
             border-radius: 0.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
             color: white;
         }
-        
-        /* Image preview styling */
+
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .image-preview {
             display: flex;
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
+            gap: 0.5rem;
+            margin-top: 1rem;
             flex-wrap: wrap;
         }
 
@@ -297,29 +387,74 @@
             position: relative;
             border-radius: 0.5rem;
             overflow: hidden;
-            width: 64px;
-            height: 64px;
-            border: 2px solid var(--glass-border-dark);
+            max-width: 100px;
+            max-height: 100px;
         }
-        
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .preview-item .remove-btn {
             position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(0, 0, 0, 0.6);
+            top: 4px;
+            right: 4px;
+            background: var(--error);
             color: white;
             border: none;
             border-radius: 50%;
             width: 20px;
             height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            font-size: 12px;
         }
-        
-        /* Welcome message and quick actions */
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            padding: 1rem;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .welcome-message h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
         .quick-action {
-            background: var(--glass-bg-dark);
-            border: 1px solid var(--glass-border-dark);
-            border-radius: 9999px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
             padding: 0.5rem 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -327,127 +462,224 @@
         }
 
         .quick-action:hover {
-            background: var(--glass-border-dark);
+            background: var(--glass-border);
             transform: translateY(-2px);
-            color: var(--text-primary-dark);
         }
-        
-        /* Light theme styles */
+
         .light-theme {
-            --dark-bg: var(--light-bg);
-            --dark-surface: var(--light-surface);
-            --text-primary-dark: var(--text-primary-light);
-            --text-secondary-dark: var(--text-secondary-light);
-            --glass-bg-dark: var(--glass-bg-light);
-            --glass-border-dark: var(--glass-border-light);
-        }
-        
-        .light-theme .header p, .light-theme .input-group label, .light-theme .message-input::placeholder {
-            color: var(--text-secondary-light);
+            --dark-bg: #f8fafc;
+            --dark-surface: #ffffff;
+            --dark-hover: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
         }
 
-        .light-theme .quick-action:hover {
-             color: var(--text-primary-light);
+        .light-theme body::before {
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
         }
 
-        /* Connection status indicator */
-        .connection-status {
-            position: fixed;
-            bottom: 1rem;
-            left: 1rem;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            z-index: 1000;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow);
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .connection-status.online { background: rgba(34, 197, 94, 0.8); color: white; }
-        .connection-status.offline { background: rgba(239, 68, 68, 0.8); color: white; }
-        .connection-status.demo { background: rgba(245, 158, 11, 0.8); color: white; }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
-        /* Prose styles for Markdown rendering */
-        .prose h1, .prose h2, .prose h3, .prose h4 { margin-top: 1em; margin-bottom: 0.5em; font-weight: 600; }
-        .prose p { margin-bottom: 0.5em; line-height: 1.6; }
-        .prose ul, .prose ol { list-style-position: inside; padding-left: 1em; margin-bottom: 0.5em; }
-        .prose li { margin-bottom: 0.25em; }
-        .prose table { width: 100%; border-collapse: collapse; }
-        .prose th, .prose td { border: 1px solid var(--glass-border-dark); padding: 0.5rem; }
-        .prose th { background-color: var(--dark-surface); }
-        
-        /* Keyframe animations */
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @media (max-width: 768px) {
+            .preferences-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+
+        .svg-icon {
+            width: 1em;
+            height: 1em;
+            vertical-align: middle;
+            fill: currentColor;
+        }
+
+        .prose {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .prose h1 {
+            font-size: 1.5em;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        .prose h2, .prose h3, .prose h4 {
+            font-size: 1.25em;
+            margin-top: 0.75em;
+            margin-bottom: 0.5em;
+        }
+
+        .prose p {
+            margin-bottom: 0.5em;
+        }
+
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5em;
+            margin-bottom: 0.5em;
+        }
+
+        .prose li {
+            margin-bottom: 0.25em;
+        }
+
+        .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
+            color: var(--text-primary);
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100">
-    <!-- Connection Status Indicator -->
-    <div id="connection-status" class="connection-status demo">🟡 Demo Mode</div>
-
+<body>
     <div class="container">
-        <!-- Header Section -->
         <div class="header">
             <h1>🌾 AgriBot</h1>
             <p>Your intelligent agricultural companion for crop management and disease detection</p>
-            <div class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">🌙</div>
+            <div class="theme-toggle" id="theme-toggle">🌙</div>
         </div>
 
-        <!-- Preferences Panel -->
         <div class="preferences-panel">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                <div class="input-group flex flex-col gap-2">
+            <div class="preferences-grid">
+                <div class="input-group">
                     <label for="region">📍 Region</label>
-                    <input type="text" id="region" class="input-field" placeholder="e.g., Bhubaneswar, Odisha" value="Bhubaneswar, Odisha">
+                    <input type="text" id="region" class="input-field" placeholder="e.g., Punjab, India" value="India">
                 </div>
-                <div class="input-group flex flex-col gap-2">
+                
+                <div class="input-group">
                     <label for="language">🌐 Language</label>
                     <select id="language" class="input-field">
                         <option value="en">English</option>
-                        <option value="or">ଓଡ଼ିଆ (Odia)</option>
                         <option value="hi">हिंदी (Hindi)</option>
+                        <option value="ta">தமிழ் (Tamil)</option>
+                        <option value="bn">বাংলা (Bengali)</option>
+                        <option value="te">తెలుగు (Telugu)</option>
+                        <option value="gu">ગુજરાતી (Gujarati)</option>
+                        <option value="mr">मराठी (Marathi)</option>
+                        <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                        <option value="or">ଓଡ଼ିଆ (Odia)</option>
                     </select>
                 </div>
+                
+                <button class="btn btn-primary" onclick="setPreferences()">✅ Set Preferences</button>
             </div>
         </div>
 
-        <!-- Chat Container -->
         <div class="chat-container">
             <div class="chat-area" id="chat-area">
-                <!-- Welcome message appears on first load -->
-                <div class="welcome-message text-center p-8 text-slate-400">
-                    <h3 class="text-slate-200 text-xl mb-4 font-semibold">Welcome to AgriBot! 🌾</h3>
-                    <p>I'm here to help. Ask me something or try a quick action:</p>
-                    <div class="quick-actions flex gap-2 flex-wrap justify-center mt-4">
-                        <div class="quick-action" onclick="sendQuickMessage('Suggest summer crops for Odisha.')">🌱 Crop Suggestions</div>
-                        <div class="quick-action" onclick="sendQuickMessage('What is the weather forecast?')">☁️ Weather Info</div>
-                        <div class="quick-action" onclick="sendQuickMessage('How to treat leaf spot disease?')">🛡️ Disease Help</div>
+                <div class="welcome-message">
+                    <h3>Welcome to AgriBot! 🌾</h3>
+                    <p>I'm here to help you with:</p>
+                    <div class="quick-actions">
+                        <div class="quick-action" onclick="sendQuickMessage('What crops are suitable for my region?')">🌱 Crop Recommendations</div>
+                        <div class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')">☁️ Weather Info</div>
+                        <div class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')">🛡️ Disease Prevention</div>
+                        <div class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')">🌿 Fertilizer Guide</div>
                     </div>
-                    <p class="mt-6 text-sm">You can also upload plant images for analysis!</p>
+                    <p style="margin-top: 1rem; font-size: 0.9rem;">You can also upload plant images for disease detection!</p>
+                </div>
+                <div id="progress-bar" class="mt-4 hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progress" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Input Panel -->
             <div class="input-panel">
                 <div class="image-preview" id="image-preview"></div>
                 <div class="input-container">
-                    <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, or upload an image..." rows="1"></textarea>
-                    <label class="action-btn" title="Upload plant images">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/></svg>
-                        <input type="file" id="image-input" class="absolute opacity-0 w-full h-full cursor-pointer" accept="image/*" multiple>
-                    </label>
-                    <button class="action-btn send-btn" id="send-btn" title="Send message">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11zM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493z"/></svg>
-                    </button>
+                    <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases, or farming techniques..." rows="1"></textarea>
+                    <div class="input-actions">
+                        <label class="upload-btn" title="Upload plant images">📷
+                            <input type="ORN" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
+                        </label>
+                        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send message">✈️</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- DOM Element References ---
+        const CACHE_NAME = 'agribot-cache-v2';
+        const urlsToCache = ['/', '/index.html'];
+        const registerServiceWorker = async () => {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register(
+                        URL.createObjectURL(new Blob([
+                            `
+                            self.addEventListener('install', event => {
+                                event.waitUntil(
+                                    caches.open('${CACHE_NAME}')
+                                        .then(cache => cache.addAll(${JSON.stringify(urlsToCache)}))
+                                );
+                            });
+                            self.addEventListener('fetch', event => {
+                                event.respondWith(
+                                    caches.match(event.request)
+                                        .then(response => response || fetch(event.request))
+                                );
+                            });
+                            self.addEventListener('activate', event => {
+                                const cacheWhitelist = ['${CACHE_NAME}'];
+                                event.waitUntil(
+                                    caches.keys().then(cacheNames => {
+                                        return Promise.all(
+                                            cacheNames.map(cacheName => {
+                                                if (!cacheWhitelist.includes(cacheName)) {
+                                                    return caches.delete(cacheName);
+                                                }
+                                            })
+                                        );
+                                    })
+                                );
+                            });
+                            `
+                        ], { type: 'application/javascript' }))
+                    );
+                    console.log('Service Worker registered');
+                } catch (err) {
+                    console.error('Service Worker registration failed:', err);
+                }
+            }
+        };
+        registerServiceWorker();
+
+        let isLightTheme = false;
+        let uploadedImages = [];
+        let isProcessing = false;
+        let currentRegion = 'India';
+        let currentLanguage = 'en';
+
         const chatArea = document.getElementById('chat-area');
         const messageInput = document.getElementById('message-input');
         const imageInput = document.getElementById('image-input');
@@ -456,238 +688,198 @@
         const regionInput = document.getElementById('region');
         const languageSelect = document.getElementById('language');
         const themeToggle = document.getElementById('theme-toggle');
-        const connectionStatus = document.getElementById('connection-status');
+        const progressBar = document.getElementById('progress-bar');
+        const progress = document.getElementById('progress');
 
-        // --- State Variables ---
-        let isLightTheme = false;
-        let uploadedImages = []; // Stores File objects
-        let isProcessing = false;
-        let userPrefs = { region: 'Bhubaneswar, Odisha', language: 'en' };
-        let demoMode = true; // Assume demo mode until API is confirmed
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
+            if (savedPrefs.region) {
+                regionInput.value = savedPrefs.region;
+                currentRegion = savedPrefs.region;
+            }
+            if (savedPrefs.language) {
+                languageSelect.value = savedPrefs.language;
+                currentLanguage = savedPrefs.language;
+            }
 
-        // --- Demo Responses (structured with Markdown) ---
-        const demoResponses = {
-            crop: (region) => `# 🌱 Crop Recommendations for ${region}
-
-| Crop      | Season      | Remarks                               |
-|-----------|-------------|---------------------------------------|
-| Paddy     | Kharif (Wet) | Main staple crop, high water demand.  |
-| Moong     | Rabi (Dry)  | Pulses, good for soil health.         |
-| Groundnut | Rabi (Dry)  | Oilseed, suitable for sandy soil.     |
-| Maize     | Kharif/Rabi | Versatile, used for food and feed.    |
-| Vegetables| All Year    | High value, requires good irrigation. |
-
-**Advice:** Consider soil testing and local market demand before planting.`,
-            weather: (region) => `# ☁️ Weather Forecast for ${region}
-
-**Current:** 34°C, Partly Cloudy, Humidity: 75%
-**Next 24 Hours:** Chance of evening thunderstorms.
-**This Week:** Temperatures will remain high with scattered showers expected mid-week.
-
-**Recommendation:** Plan irrigation carefully. Avoid pesticide spraying if rain is forecast.`,
-            disease: () => `# 🛡️ Common Leaf Spot Disease Treatment
-
-**1. Cultural Control:**
-- **Improve Air Circulation:** Prune dense foliage.
-- **Water at the Base:** Avoid overhead watering to keep leaves dry.
-- **Sanitation:** Remove and destroy infected leaves immediately.
-
-**2. Organic Treatment:**
-- Apply Neem oil or a copper-based fungicide spray every 7-10 days.
-
-**3. Chemical Treatment (if severe):**
-- Use a Mancozeb-based fungicide as per label instructions.`,
-            image: () => `# 📷 Plant Image Analysis (Demo)
-
-**Result:** The analysis suggests this could be **Early Blight** on a tomato plant.
-
-| Finding          | Confidence |
-|------------------|------------|
-| Plant: Tomato    | 88%        |
-| Disease: Early Blight | 92%        |
-
-**Recommendation:**
-- Remove lower infected leaves.
-- Apply a copper-based or Chlorothalonil fungicide.
-- Ensure proper plant spacing for better airflow.
-
-*Disclaimer: This is a demo analysis. For accurate diagnosis, consult a local agricultural expert.*`,
-            default: () => `# 🌾 AgriBot Assistant
-
-I can help with:
-- **Crop suggestions** for your region.
-- **Weather forecasts** and advice.
-- **Pest and disease** identification and treatment.
-- **Fertilizer** recommendations.
-
-How can I assist you today?`
-        };
-
-        // --- Core Functions ---
-
-        /**
-         * Adds a message to the chat interface.
-         * @param {'user'|'bot'|'error'} type - The type of message.
-         * @param {string} content - The HTML content of the message.
-         * @param {boolean} [isLoading=false] - If true, shows a loading indicator.
-         * @returns {number} The unique ID of the message element.
-         */
-        function addMessage(type, content, isLoading = false) {
-            const messageId = Date.now();
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.id = `message-${messageId}`;
-
-            const avatarContent = type === 'user' ? '🧑‍🌾' : type === 'bot' ? '🤖' : '⚠️';
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            messageDiv.innerHTML = `
-                <div class="message-avatar">${avatarContent}</div>
-                <div class="message-content">
-                    ${isLoading
-                        ? `<div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-t-transparent border-slate-400 rounded-full animate-spin"></div><span>Processing...</span></div>`
-                        : `<div class="prose">${content}</div><div class="text-xs text-slate-500 mt-2 text-right">${time}</div>`
-                    }
-                </div>
-            `;
+            messageInput.addEventListener('input', autoResize);
             
-            const welcomeMessage = document.querySelector('.welcome-message');
-            if (welcomeMessage) welcomeMessage.remove();
-
-            chatArea.appendChild(messageDiv);
-            chatArea.scrollTop = chatArea.scrollHeight;
-            return messageId;
-        }
-
-        /**
-         * Updates or replaces a message in the chat.
-         * @param {number} messageId - The ID of the message to update.
-         * @param {string} newContent - The new HTML content.
-         */
-        function updateMessage(messageId, newContent) {
-            const messageEl = document.getElementById(messageId);
-            if (messageEl) {
-                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const contentEl = messageEl.querySelector('.message-content');
-                contentEl.innerHTML = `<div class="prose">${newContent}</div><div class="text-xs text-slate-500 mt-2 text-right">${time}</div>`;
-                chatArea.scrollTop = chatArea.scrollHeight;
-            }
-        }
-        
-        /**
-         * Main function to handle sending a message.
-         */
-        async function sendMessage() {
-            if (isProcessing) return;
-
-            const messageText = messageInput.value.trim();
-            const hasImages = uploadedImages.length > 0;
-
-            if (!messageText && !hasImages) return;
-
-            setProcessing(true);
-
-            // Add user message to chat
-            let userMessage = messageText;
-            if(hasImages) {
-                userMessage += `<br><small>(${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} attached)</small>`;
-            }
-            addMessage('user', userMessage);
-
-            const loadingId = addMessage('bot', '', true);
-
-            try {
-                // Simulate API call with a delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                let response;
-                if (demoMode) {
-                    if (hasImages) {
-                        response = demoResponses.image();
-                    } else {
-                        const msg = messageText.toLowerCase();
-                        if (msg.includes('crop')) response = demoResponses.crop(userPrefs.region);
-                        else if (msg.includes('weather')) response = demoResponses.weather(userPrefs.region);
-                        else if (msg.includes('disease') || msg.includes('treat')) response = demoResponses.disease();
-                        else response = demoResponses.default();
-                    }
-                } else {
-                    // TODO: Implement actual API fetch logic here
-                    response = "API connection is not yet implemented. This is a placeholder response.";
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
                 }
-                
-                // Render the response using marked for Markdown
-                updateMessage(loadingId, marked.parse(response));
+            });
 
+            imageInput.addEventListener('change', handleImageUpload);
+            
+            themeToggle.addEventListener('click', toggleTheme);
+
+            setPreferences();
+        });
+
+        function autoResize() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = messageInput.scrollHeight + 'px';
+        }
+
+        function toggleTheme() {
+            isLightTheme = !isLightTheme;
+            document.body.classList.toggle('light-theme', isLightTheme);
+            themeToggle.textContent = isLightTheme ? '☀️' : '🌙';
+        }
+
+        async function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                img.src = URL.createObjectURL(file);
+                img.onload = () => {
+                    const maxWidth = 400;
+                    const maxHeight = 300;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(blob => {
+                        resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+                        URL.revokeObjectURL(img.src);
+                    }, 'image/jpeg', 0.85);
+                };
+                img.onerror = reject;
+            });
+        }
+
+        async function typeResponse(text, element, speed = 20) {
+            element.innerHTML = '';
+            const plainText = marked.parse(text).replace(/<[^>]+>/g, '');
+            for (let i = 0; i < plainText.length; i++) {
+                element.textContent += plainText.charAt(i);
+                await new Promise(resolve => setTimeout(resolve, speed));
+                element.scrollTop = element.scrollHeight;
+            }
+            element.innerHTML = `<div class="prose">${marked.parse(text)}</div>`;
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = new Date().toLocaleTimeString();
+            element.appendChild(time);
+        }
+
+        function updateProgress(percent) {
+            progressBar.classList.remove('hidden');
+            progress.style.width = `${percent}%`;
+            if (percent >= 100) setTimeout(() => progressBar.classList.add('hidden'), 500);
+        }
+
+        async function setPreferences() {
+            const region = regionInput.value.trim() || 'India';
+            const language = languageSelect.value;
+            
+            currentRegion = region;
+            currentLanguage = language;
+            
+            const formData = new FormData();
+            formData.append('region', region);
+            formData.append('language', language);
+            
+            try {
+                updateProgress(10);
+                const res = await fetch('/set_prefs', {
+                    method: 'POST',
+                    body: formData
+                });
+                updateProgress(50);
+                if (!res.ok) throw new Error('Failed to set preferences');
+                const data = await res.json();
+                updateProgress(100);
+                if (data.status === 'success') {
+                    localStorage.setItem('userPrefs', JSON.stringify({
+                        region: region,
+                        language: language
+                    }));
+                    addMessage('user', `Preferences updated: Region - ${region}, Language - ${getLanguageName(language)}`);
+                    addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`);
+                } else {
+                    addMessage('error', `Error: ${data.error}`);
+                }
             } catch (error) {
-                console.error('Error sending message:', error);
-                updateMessage(loadingId, 'Sorry, something went wrong. Please try again.');
-            } finally {
-                setProcessing(false);
-                resetInput();
+                updateProgress(100);
+                addMessage('error', `Error setting preferences: ${error.message}. <a href="#" onclick="setPreferences()">Retry</a>`);
             }
         }
-        
-        /**
-         * Handles image selection and preview generation.
-         */
-        function handleImageUpload(event) {
-            const files = Array.from(event.target.files);
-            imagePreview.innerHTML = ''; // Clear previous previews
+
+        function getLanguageName(code) {
+            const languages = {
+                'en': 'English',
+                'hi': 'Hindi',
+                'ta': 'Tamil',
+                'bn': 'Bengali',
+                'te': 'Telugu',
+                'gu': 'Gujarati',
+                'mr': 'Marathi',
+                'pa': 'Punjabi',
+                'or': 'Odia'
+            };
+            return languages[code] || 'English';
+        }
+
+        async function handleImageUpload(e) {
+            const files = Array.from(e.target.files);
+            
+            if (files.length > 3) {
+                addMessage('error', 'Please upload a maximum of 3 images.');
+                imageInput.value = '';
+                imagePreview.innerHTML = '';
+                return;
+            }
+            
             uploadedImages = [];
-
-            files.forEach((file, index) => {
-                if (!file.type.startsWith('image/')) return;
-                uploadedImages.push(file);
-
-                const reader = new FileReader();
-                (function(index) {
+            imagePreview.innerHTML = '';
+            updateProgress(10);
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+                    const compressed = await compressImage(file);
+                    uploadedImages.push(compressed);
+                    const reader = new FileReader();
                     reader.onload = (e) => {
                         const previewItem = document.createElement('div');
                         previewItem.className = 'preview-item';
                         previewItem.innerHTML = `
-                            <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
-                            <button class="remove-btn" onclick="removeImage(${index})">×</button>
+                            <img src="${e.target.result}" alt="Preview">
+                            <button class="remove-btn" onclick="removeImage(${i})">×</button>
                         `;
                         imagePreview.appendChild(previewItem);
                     };
-                })(index);
-                reader.readAsDataURL(file);
-            });
+                    reader.readAsDataURL(file);
+                    updateProgress(10 + (i + 1) * (80 / files.length));
+                } else {
+                    addMessage('error', `Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
+                }
+            }
+            updateProgress(100);
         }
-        
-        /**
-         * Removes an image from the preview and upload list.
-         * @param {number} index - The index of the image to remove.
-         */
+
         function removeImage(index) {
             uploadedImages.splice(index, 1);
-            // Re-render previews to keep indices correct
-            const currentFiles = [...uploadedImages];
-            imagePreview.innerHTML = '';
-            uploadedImages = [];
-            currentFiles.forEach(file => {
-                 const newEvent = { target: { files: [file] } };
-                 handleImageUpload(newEvent);
-            });
-        }
-
-        // --- Helper & UI Functions ---
-
-        function setProcessing(state) {
-            isProcessing = state;
-            sendBtn.disabled = state;
-            messageInput.disabled = state;
-            sendBtn.classList.toggle('opacity-50', state);
-        }
-        
-        function resetInput() {
-            messageInput.value = '';
-            imageInput.value = ''; // Clear file input
-            imagePreview.innerHTML = '';
-            uploadedImages = [];
-            messageInput.style.height = 'auto';
-            messageInput.focus();
+            imagePreview.children[index].remove();
+            if (uploadedImages.length === 0) {
+                imageInput.value = '';
+            }
         }
 
         function sendQuickMessage(message) {
@@ -695,74 +887,163 @@ How can I assist you today?`
             sendMessage();
         }
 
-        function toggleTheme() {
-            isLightTheme = !isLightTheme;
-            document.body.classList.toggle('light-theme');
-            themeToggle.textContent = isLightTheme ? '☀️' : '🌙';
-            localStorage.setItem('theme', isLightTheme ? 'light' : 'dark');
-        }
-
-        function updateConnectionStatus() {
-            // This is a placeholder. In a real app, you'd check navigator.onLine
-            // and ping an API endpoint.
-            const status = demoMode ? 'demo' : 'online';
-            const config = {
-                'online': { class: 'online', text: '🟢 Online' },
-                'offline': { class: 'offline', text: '🔴 Offline' },
-                'demo': { class: 'demo', text: '🟡 Demo Mode' }
-            };
-            connectionStatus.className = `connection-status ${config[status].class}`;
-            connectionStatus.textContent = config[status].text;
-        }
-
-        function loadPreferences() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                isLightTheme = true;
-                document.body.classList.add('light-theme');
-                themeToggle.textContent = '☀️';
+        async function sendMessage() {
+            if (isProcessing) return;
+            
+            const message = messageInput.value.trim();
+            const hasImages = uploadedImages.length > 0;
+            
+            if (!message && !hasImages) {
+                messageInput.focus();
+                return;
             }
             
-            const savedPrefs = JSON.parse(localStorage.getItem('userPrefs'));
-            if (savedPrefs) {
-                userPrefs = savedPrefs;
-                regionInput.value = userPrefs.region;
-                languageSelect.value = userPrefs.language;
+            isProcessing = true;
+            sendBtn.disabled = true;
+            
+            const welcomeMessage = document.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
             }
-        }
-        
-        function savePreferences() {
-            userPrefs.region = regionInput.value;
-            userPrefs.language = languageSelect.value;
-            localStorage.setItem('userPrefs', JSON.stringify(userPrefs));
-            addMessage('bot', `Preferences saved! I'll now provide info relevant to **${userPrefs.region}**.`);
-        }
-
-        // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadPreferences();
-            updateConnectionStatus();
-            setProcessing(false);
-            resetInput();
-        });
-
-        sendBtn.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+            
+            if (message) {
+                addMessage('user', message);
             }
-        });
-        messageInput.addEventListener('input', () => {
+            
+            if (hasImages) {
+                addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
+            }
+            
+            const loadingId = addMessage('bot', '', true);
+            
+            const formData = new FormData();
+            if (message) {
+                formData.append('query', message);
+            }
+            for (let i = 0; i < uploadedImages.length; i++) {
+                formData.append('image', uploadedImages[i]);
+                updateProgress(10 + (i + 1) * (80 / uploadedImages.length));
+            }
+            
+            try {
+                const endpoint = hasImages ? '/upload' : '/chat';
+                updateProgress(10);
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                updateProgress(50);
+                
+                removeMessage(loadingId);
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                updateProgress(100);
+                
+                if (data.error) {
+                    addMessage('error', data.error);
+                } else if (hasImages) {
+                    const response = `
+                        <div class="prose">
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
+                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                                <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
+                                <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
+                                <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
+                            </div>
+                            <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
+                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
+                                ${marked.parse(data.remedy)}
+                            </div>
+                        </div>
+                    `;
+                    if (data.typing_effect) {
+                        addMessage('bot', '');
+                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
+                        await typeResponse(response, lastMessage);
+                    } else {
+                        addMessage('bot', response);
+                    }
+                } else {
+                    const response = data.response;
+                    if (data.typing_effect) {
+                        addMessage('bot', '');
+                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
+                        await typeResponse(response, lastMessage);
+                    } else {
+                        addMessage('bot', `<div class="prose">${marked.parse(response)}</div>`);
+                    }
+                }
+            } catch (error) {
+                removeMessage(loadingId);
+                updateProgress(100);
+                addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="sendMessage()">Retry</a>`);
+            }
+            
+            messageInput.value = '';
             messageInput.style.height = 'auto';
-            messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
-        });
-        
-        imageInput.addEventListener('change', handleImageUpload);
-        themeToggle.addEventListener('click', toggleTheme);
-        regionInput.addEventListener('change', savePreferences);
-        languageSelect.addEventListener('change', savePreferences);
+            uploadedImages = [];
+            imagePreview.innerHTML = '';
+            imageInput.value = '';
+            isProcessing = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
 
+        function addMessage(type, content, isLoading = false) {
+            const messageId = Date.now();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.id = `message-${messageId}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            
+            if (type === 'user') {
+                avatar.textContent = '🙎';
+            } else if (type === 'bot') {
+                avatar.textContent = '🤖';
+            } else if (type === 'error') {
+                avatar.textContent = '⚠️';
+            }
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (isLoading) {
+                messageContent.innerHTML = `
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <span>Processing...</span>
+                    </div>
+                `;
+            } else {
+                messageContent.innerHTML = content;
+                
+                const time = document.createElement('div');
+                time.className = 'message-time';
+                time.textContent = new Date().toLocaleTimeString();
+                messageContent.appendChild(time);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            return messageId;
+        }
+
+        function removeMessage(messageId) {
+            const message = document.getElementById(`message-${messageId}`);
+            if (message) {
+                message.remove();
+            }
+        }
     </script>
 </body>
 </html>
