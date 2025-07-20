@@ -6,6 +6,7 @@
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.10/dist/purify.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -49,7 +50,7 @@
             bottom: 0;
             background: 
                 radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at iks 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
             pointer-events: none;
             z-index: -1;
         }
@@ -251,6 +252,7 @@
             padding: 1rem 1.25rem;
             border-radius: 1rem;
             position: relative;
+            word-wrap: break-word;
         }
 
         .message.user .message-content {
@@ -526,6 +528,7 @@
         .prose {
             max-width: 100%;
             overflow-x: auto;
+            word-wrap: break-word;
         }
 
         .prose h1 {
@@ -552,6 +555,7 @@
 
         .prose li {
             margin-bottom: 0.25em;
+            white-space: normal;
         }
 
         .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
@@ -629,7 +633,7 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'agribot-cache-v2';
+        const CACHE_NAME = 'agribot-cache-v3';
         const urlsToCache = ['/', '/index.html'];
         const registerServiceWorker = async () => {
             if ('serviceWorker' in navigator) {
@@ -684,7 +688,7 @@
         const messageInput = document.getElementById('message-input');
         const imageInput = document.getElementById('image-input');
         const imagePreview = document.getElementById('image-preview');
-        const sendBtn = document.getElementById('send-btn');
+        const sendBtn = document.get soonerButton('send-btn');
         const regionInput = document.getElementById('region');
         const languageSelect = document.getElementById('language');
         const themeToggle = document.getElementById('theme-toggle');
@@ -736,8 +740,8 @@
                 const ctx = canvas.getContext('2d');
                 img.src = URL.createObjectURL(file);
                 img.onload = () => {
-                    const maxWidth = 400;
-                    const maxHeight = 300;
+                    const maxWidth = 800;
+                    const maxHeight = 600;
                     let width = img.width;
                     let height = img.height;
                     if (width > height) {
@@ -759,23 +763,54 @@
                         URL.revokeObjectURL(img.src);
                     }, 'image/jpeg', 0.85);
                 };
-                img.onerror = reject;
+                img.onerror = () => {
+                    reject(new Error('Failed to load image'));
+                };
             });
         }
 
         async function typeResponse(text, element, speed = 20) {
-            element.innerHTML = '';
-            const plainText = marked.parse(text).replace(/<[^>]+>/g, '');
-            for (let i = 0; i < plainText.length; i++) {
-                element.textContent += plainText.charAt(i);
-                await new Promise(resolve => setTimeout(resolve, speed));
-                element.scrollTop = element.scrollHeight;
+            try {
+                element.innerHTML = '';
+                const cleanedText = DOMPurify.sanitize(text);
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(marked.parse(cleanedText), 'text/html');
+                const plainText = Array.from(doc.body.childNodes)
+                    .map(node => node.textContent)
+                    .join(' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                if (!plainText) {
+                    throw new Error('No valid text to display');
+                }
+
+                let currentIndex = 0;
+                let currentText = '';
+
+                const typeChar = () => {
+                    if (currentIndex < plainText.length) {
+                        currentText += plainText[currentIndex];
+                        element.textContent = currentText;
+                        element.scrollTop = element.scrollHeight;
+                        currentIndex++;
+                        requestAnimationFrame(typeChar);
+                    } else {
+                        element.innerHTML = `<div class="prose">${marked.parse(cleanedText)}</div>`;
+                        const time = document.createElement('div');
+                        time.className = 'message-time';
+                        time.textContent = new Date().toLocaleTimeString();
+                        element.appendChild(time);
+                        chatArea.scrollTop = chatArea.scrollHeight;
+                    }
+                };
+
+                requestAnimationFrame(typeChar);
+            } catch (error) {
+                console.error('Typing effect error:', error);
+                element.innerHTML = `<div class="prose">${DOMPurify.sanitize(marked.parse(text))}</div><div class="message-time">${new Date().toLocaleTimeString()}</div>`;
+                addMessage('error', 'Warning: The response may be incomplete or malformed. Displaying as received.');
             }
-            element.innerHTML = `<div class="prose">${marked.parse(text)}</div>`;
-            const time = document.createElement('div');
-            time.className = 'message-time';
-            time.textContent = new Date().toLocaleTimeString();
-            element.appendChild(time);
         }
 
         function updateProgress(percent) {
@@ -802,7 +837,7 @@
                     body: formData
                 });
                 updateProgress(50);
-                if (!res.ok) throw new Error('Failed to set preferences');
+                if (!res.ok) throw new Error(`Failed to set preferences: ${res.status}`);
                 const data = await res.json();
                 updateProgress(100);
                 if (data.status === 'success') {
@@ -813,7 +848,7 @@
                     addMessage('user', `Preferences updated: Region - ${region}, Language - ${getLanguageName(language)}`);
                     addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`);
                 } else {
-                    addMessage('error', `Error: ${data.error}`);
+                    addMessage('error', `Error: ${data.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 updateProgress(100);
@@ -850,28 +885,33 @@
             imagePreview.innerHTML = '';
             updateProgress(10);
             
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-                    const compressed = await compressImage(file);
-                    uploadedImages.push(compressed);
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const previewItem = document.createElement('div');
-                        previewItem.className = 'preview-item';
-                        previewItem.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview">
-                            <button class="remove-btn" onclick="removeImage(${i})">×</button>
-                        `;
-                        imagePreview.appendChild(previewItem);
-                    };
-                    reader.readAsDataURL(file);
-                    updateProgress(10 + (i + 1) * (80 / files.length));
-                } else {
-                    addMessage('error', `Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+                        const compressed = await compressImage(file);
+                        uploadedImages.push(compressed);
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const previewItem = document.createElement('div');
+                            previewItem.className = 'preview-item';
+                            previewItem.innerHTML = `
+                                <img src="${e.target.result}" alt="Preview">
+                                <button class="remove-btn" onclick="removeImage(${i})">×</button>
+                            `;
+                            imagePreview.appendChild(previewItem);
+                        };
+                        reader.readAsDataURL(file);
+                        updateProgress(10 + (i + 1) * (80 / files.length));
+                    } else {
+                        addMessage('error', `Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
+                    }
                 }
+                updateProgress(100);
+            } catch (error) {
+                updateProgress(100);
+                addMessage('error', `Error processing images: ${error.message}`);
             }
-            updateProgress(100);
         }
 
         function removeImage(index) {
@@ -950,13 +990,13 @@
                         <div class="prose">
                             <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
                             <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
-                                <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
-                                <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
-                                <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
+                                <p><strong>Plant:</strong> ${data.plant || 'Unknown'} (Confidence: ${data.plant_confidence || 'N/A'})</p>
+                                <p><strong>Scientific Name:</strong> ${data.scientific_name || 'Not identified'}</p>
+                                <p><strong>Detected Issue:</strong> ${data.disease || 'None'} (Confidence: ${data.disease_confidence || 'N/A'})</p>
                             </div>
                             <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
                             <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
-                                ${marked.parse(data.remedy)}
+                                ${marked.parse(data.remedy || 'No treatment recommendations available.')}
                             </div>
                         </div>
                     `;
@@ -968,7 +1008,7 @@
                         addMessage('bot', response);
                     }
                 } else {
-                    const response = data.response;
+                    const response = data.response || 'No response received.';
                     if (data.typing_effect) {
                         addMessage('bot', '');
                         const lastMessage = chatArea.lastChild.querySelector('.message-content');
@@ -1021,7 +1061,7 @@
                     </div>
                 `;
             } else {
-                messageContent.innerHTML = content;
+                messageContent.innerHTML = DOMPurify.sanitize(content);
                 
                 const time = document.createElement('div');
                 time.className = 'message-time';
