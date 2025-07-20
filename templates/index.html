@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
-    <link rel="icon" href="data:;base64,=" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
     <style>
@@ -50,7 +49,7 @@
             bottom: 0;
             background: 
                 radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at iks 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
             pointer-events: none;
             z-index: -1;
         }
@@ -630,6 +629,51 @@
     </div>
 
     <script>
+        const CACHE_NAME = 'agribot-cache-v2';
+        const urlsToCache = ['/', '/index.html'];
+        const registerServiceWorker = async () => {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.register(
+                        URL.createObjectURL(new Blob([
+                            `
+                            self.addEventListener('install', event => {
+                                event.waitUntil(
+                                    caches.open('${CACHE_NAME}')
+                                        .then(cache => cache.addAll(${JSON.stringify(urlsToCache)}))
+                                );
+                            });
+                            self.addEventListener('fetch', event => {
+                                event.respondWith(
+                                    caches.match(event.request)
+                                        .then(response => response || fetch(event.request))
+                                );
+                            });
+                            self.addEventListener('activate', event => {
+                                const cacheWhitelist = ['${CACHE_NAME}'];
+                                event.waitUntil(
+                                    caches.keys().then(cacheNames => {
+                                        return Promise.all(
+                                            cacheNames.map(cacheName => {
+                                                if (!cacheWhitelist.includes(cacheName)) {
+                                                    return caches.delete(cacheName);
+                                                }
+                                            })
+                                        );
+                                    })
+                                );
+                            });
+                            `
+                        ], { type: 'application/javascript' }))
+                    );
+                    console.log('Service Worker registered');
+                } catch (err) {
+                    console.error('Service Worker registration failed:', err);
+                }
+            }
+        };
+        registerServiceWorker();
+
         let isLightTheme = false;
         let uploadedImages = [];
         let isProcessing = false;
@@ -843,23 +887,6 @@
             sendMessage();
         }
 
-        async function fetchWithRetry(endpoint, options, retries = 3, backoff = 1000) {
-            for (let attempt = 1; attempt <= retries; attempt++) {
-                try {
-                    const res = await fetch(endpoint, options);
-                    if (res.status === 429 && attempt < retries) {
-                        const waitTime = backoff * Math.pow(2, attempt - 1);
-                        addMessage('error', `Rate limit reached. Retrying in ${waitTime/1000} seconds...`);
-                        await new Promise(resolve => setTimeout(resolve, waitTime));
-                        continue;
-                    }
-                    return res;
-                } catch (error) {
-                    if (attempt === retries) throw error;
-                }
-            }
-        }
-
         async function sendMessage() {
             if (isProcessing) return;
             
@@ -901,10 +928,10 @@
             try {
                 const endpoint = hasImages ? '/upload' : '/chat';
                 updateProgress(10);
-                const res = await fetchWithRetry(endpoint, {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     body: formData
-                }, 3, 1000);
+                });
                 updateProgress(50);
                 
                 removeMessage(loadingId);
