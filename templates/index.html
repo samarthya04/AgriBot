@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
+    <title>AgriBot - Your Smart Agricultural Assistant</title>
     <link rel="icon" href="data:;base64,=" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -104,6 +104,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
+            font-size: 1.5rem;
         }
 
         .theme-toggle:hover {
@@ -167,6 +168,7 @@
             align-items: center;
             gap: 0.5rem;
             text-decoration: none;
+            font-size: 1rem;
         }
 
         .btn-primary {
@@ -177,6 +179,16 @@
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-retry {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-retry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
         }
 
         .chat-container {
@@ -231,8 +243,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
             flex-shrink: 0;
+            font-size: 2rem;
         }
 
         .message.user .message-avatar {
@@ -339,6 +351,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            font-size: 1.5rem;
         }
 
         .upload-btn:hover {
@@ -365,7 +378,7 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            color: white;
+            font-size: 1.5rem;
         }
 
         .send-btn:hover:not(:disabled) {
@@ -396,6 +409,10 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .preview-item.invalid {
+            border: 2px solid var(--error);
         }
 
         .preview-item .remove-btn {
@@ -517,13 +534,6 @@
             }
         }
 
-        .svg-icon {
-            width: 1em;
-            height: 1em;
-            vertical-align: middle;
-            fill: currentColor;
-        }
-
         .prose {
             max-width: 100%;
             overflow-x: auto;
@@ -556,28 +566,30 @@
         }
 
         .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
-            color(schedule:6px;color: var(--text-primary);
+            color: var(--text-primary);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌾 AgriBot</h1>
+            <h1>AgriBot</h1>
             <p>Your intelligent agricultural companion for crop management and disease detection</p>
-            <div class="theme-toggle" id="theme-toggle">🌙</div>
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme to light with sun emoji">
+                <span>☀️</span>
+            </button>
         </div>
 
         <div class="preferences-panel">
             <div class="preferences-grid">
                 <div class="input-group">
-                    <label for="region">📍 Region</label>
-                    <input type="text" id="region" class="input-field" placeholder="e.g., Punjab, India" value="India">
+                    <label for="region">Region</label>
+                    <input type="text" id="region" class="input-field" placeholder="e.g., Punjab, India" value="India" aria-label="Enter your region">
                 </div>
                 
                 <div class="input-group">
-                    <label for="language">🌐 Language</label>
-                    <select id="language" class="input-field">
+                    <label for="language">Language</label>
+                    <select id="language" class="input-field" aria-label="Select your language">
                         <option value="en">English</option>
                         <option value="hi">हिंदी (Hindi)</option>
                         <option value="ta">தமிழ் (Tamil)</option>
@@ -590,20 +602,22 @@
                     </select>
                 </div>
                 
-                <button class="btn btn-primary" onclick="setPreferences()">✅ Set Preferences</button>
+                <button class="btn btn-primary" onclick="setPreferences()" aria-label="Set preferences with checkmark emoji">
+                    <span>✅</span> Set Preferences
+                </button>
             </div>
         </div>
 
         <div class="chat-container">
             <div class="chat-area" id="chat-area">
                 <div class="welcome-message">
-                    <h3>Welcome to AgriBot! 🌾</h3>
+                    <h3>Welcome to AgriBot!</h3>
                     <p>I'm here to help you with:</p>
                     <div class="quick-actions">
-                        <div class="quick-action" onclick="sendQuickMessage('What crops are suitable for my region?')">🌱 Crop Recommendations</div>
-                        <div class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')">☁️ Weather Info</div>
-                        <div class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')">🛡️ Disease Prevention</div>
-                        <div class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')">🌿 Fertilizer Guide</div>
+                        <button class="quick-action" onclick="sendQuickMessage('What crops are suitable for my region?')" aria-label="Crop recommendations">Crop Recommendations</button>
+                        <button class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')" aria-label="Weather information">Weather Info</button>
+                        <button class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')" aria-label="Disease prevention">Disease Prevention</button>
+                        <button class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')" aria-label="Fertilizer guide">Fertilizer Guide</button>
                     </div>
                     <p style="margin-top: 1rem; font-size: 0.9rem;">You can also upload plant images for disease detection!</p>
                 </div>
@@ -611,18 +625,22 @@
                     <div class="w-full bg-gray-200 rounded-full h-2.5">
                         <div id="progress" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
+                    <p id="progress-text" class="text-center text-sm text-gray-400 mt-1"></p>
                 </div>
             </div>
 
             <div class="input-panel">
                 <div class="image-preview" id="image-preview"></div>
                 <div class="input-container">
-                    <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases, or farming techniques..." rows="1"></textarea>
+                    <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases, or farming techniques..." rows="1" aria-label="Enter your message or question"></textarea>
                     <div class="input-actions">
-                        <label class="upload-btn" title="Upload plant images">📷
+                        <label class="upload-btn" title="Upload plant images" aria-label="Upload plant images with upload emoji">
+                            <span>📤</span>
                             <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
                         </label>
-                        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send message">✈️</button>
+                        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send message" aria-label="Send message with arrow emoji">
+                            <span>➡️</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -630,55 +648,6 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'agribot-cache-v3';
-        const urlsToCache = ['/static/style.css', '/static/script.js'];
-        const registerServiceWorker = async () => {
-            if ('serviceWorker' in navigator) {
-                try {
-                    const registration = await navigator.serviceWorker.register(
-                        URL.createObjectURL(new Blob([
-                            `
-                            self.addEventListener('install', event => {
-                                event.waitUntil(
-                                    caches.open('${CACHE_NAME}')
-                                        .then(cache => cache.addAll(${JSON.stringify(urlsToCache)}))
-                                );
-                            });
-                            self.addEventListener('fetch', event => {
-                                const url = new URL(event.request.url);
-                                if (url.pathname.startsWith('/api/') || ['/chat', '/upload', '/set_prefs'].includes(url.pathname)) {
-                                    return fetch(event.request);
-                                }
-                                event.respondWith(
-                                    caches.match(event.request)
-                                        .then(response => response || fetch(event.request))
-                                );
-                            });
-                            self.addEventListener('activate', event => {
-                                const cacheWhitelist = ['${CACHE_NAME}'];
-                                event.waitUntil(
-                                    caches.keys().then(cacheNames => {
-                                        return Promise.all(
-                                            cacheNames.map(cacheName => {
-                                                if (!cacheWhitelist.includes(cacheName)) {
-                                                    return caches.delete(cacheName);
-                                                }
-                                            })
-                                        );
-                                    })
-                                );
-                            });
-                            `
-                        ], { type: 'application/javascript' }))
-                    );
-                    console.log('Service Worker registered');
-                } catch (err) {
-                    console.error('Service Worker registration failed:', err);
-                }
-            }
-        };
-        registerServiceWorker();
-
         let isLightTheme = false;
         let uploadedImages = [];
         let isProcessing = false;
@@ -697,6 +666,7 @@
         const themeToggle = document.getElementById('theme-toggle');
         const progressBar = document.getElementById('progress-bar');
         const progress = document.getElementById('progress');
+        const progressText = document.getElementById('progress-text');
 
         document.addEventListener('DOMContentLoaded', () => {
             const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
@@ -733,7 +703,12 @@
         function toggleTheme() {
             isLightTheme = !isLightTheme;
             document.body.classList.toggle('light-theme', isLightTheme);
-            themeToggle.textContent = isLightTheme ? '☀️' : '🌙';
+            themeToggle.innerHTML = isLightTheme 
+                ? '<span>🌙</span>'
+                : '<span>☀️</span>';
+            themeToggle.setAttribute('aria-label', isLightTheme 
+                ? 'Switch to dark theme with moon emoji' 
+                : 'Switch to light theme with sun emoji');
         }
 
         async function compressImage(file) {
@@ -766,29 +741,20 @@
                         URL.revokeObjectURL(img.src);
                     }, 'image/jpeg', 0.85);
                 };
-                img.onerror = reject;
+                img.onerror = () => {
+                    reject(new Error(`Invalid image: ${file.name}`));
+                };
             });
         }
 
-        async function typeResponse(text, element, speed = 20) {
-            element.innerHTML = '';
-            const plainText = marked.parse(text).replace(/<[^>]+>/g, '');
-            for (let i = 0; i < plainText.length; i++) {
-                element.textContent += plainText.charAt(i);
-                await new Promise(resolve => setTimeout(resolve, speed));
-                element.scrollTop = element.scrollHeight;
-            }
-            element.innerHTML = `<div class="prose">${marked.parse(text)}</div>`;
-            const time = document.createElement('div');
-            time.className = 'message-time';
-            time.textContent = new Date().toLocaleTimeString();
-            element.appendChild(time);
-        }
-
-        function updateProgress(percent) {
+        function updateProgress(percent, text = '') {
             progressBar.classList.remove('hidden');
             progress.style.width = `${percent}%`;
-            if (percent >= 100) setTimeout(() => progressBar.classList.add('hidden'), 500);
+            progressText.textContent = text;
+            if (percent >= 100) setTimeout(() => {
+                progressBar.classList.add('hidden');
+                progressText.textContent = '';
+            }, 500);
         }
 
         async function setPreferences() {
@@ -810,11 +776,11 @@
             formData.append('language', language);
             
             try {
-                updateProgress(10);
-                const res = await fetch('/set_prefs', {
+                updateProgress(10, 'Setting preferences...');
+                const res = await fetchWithRetry('/set_prefs', {
                     method: 'POST',
                     body: formData
-                });
+                }, 3, 2000);
                 updateProgress(50);
                 
                 if (!res.ok) {
@@ -873,27 +839,46 @@
             
             uploadedImages = [];
             imagePreview.innerHTML = '';
-            updateProgress(10);
+            updateProgress(10, 'Processing images...');
             
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-                    const compressed = await compressImage(file);
-                    uploadedImages.push(compressed);
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
+                    updateProgress(10 + (i * 80 / files.length), `Processing image ${i + 1} of ${files.length}...`);
+                    try {
+                        const compressed = await compressImage(file);
+                        uploadedImages.push(compressed);
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const previewItem = document.createElement('div');
+                            previewItem.className = 'preview-item';
+                            previewItem.innerHTML = `
+                                <img src="${e.target.result}" alt="Preview of uploaded image ${i + 1}">
+                                <button class="remove-btn" onclick="removeImage(${i})" aria-label="Remove image ${i + 1}">×</button>
+                            `;
+                            imagePreview.appendChild(previewItem);
+                        };
+                        reader.readAsDataURL(file);
+                        updateProgress(10 + ((i + 1) * 80 / files.length), `Processed image ${i + 1} of ${files.length}`);
+                    } catch (error) {
+                        addMessage('error', `Invalid image: ${file.name}. Please upload a valid PNG or JPG.`);
                         const previewItem = document.createElement('div');
-                        previewItem.className = 'preview-item';
+                        previewItem.className = 'preview-item invalid';
                         previewItem.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview">
-                            <button class="remove-btn" onclick="removeImage(${i})">×</button>
+                            <img src="" alt="Invalid image ${file.name}">
+                            <button class="remove-btn" onclick="removeImage(${i})" aria-label="Remove invalid image ${i + 1}">×</button>
                         `;
                         imagePreview.appendChild(previewItem);
-                    };
-                    reader.readAsDataURL(file);
-                    updateProgress(10 + (i + 1) * (80 / files.length));
+                    }
                 } else {
                     addMessage('error', `Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item invalid';
+                    previewItem.innerHTML = `
+                        <img src="" alt="Invalid image ${file.name}">
+                        <button class="remove-btn" onclick="removeImage(${i})" aria-label="Remove invalid image ${i + 1}">×</button>
+                    `;
+                    imagePreview.appendChild(previewItem);
                 }
             }
             updateProgress(100);
@@ -954,12 +939,12 @@
             }
             for (let i = 0; i < uploadedImages.length; i++) {
                 formData.append('image', uploadedImages[i]);
-                updateProgress(10 + (i + 1) * (80 / uploadedImages.length));
+                updateProgress(10 + (i + 1) * (80 / uploadedImages.length), `Uploading image ${i + 1} of ${uploadedImages.length}...`);
             }
             
             try {
                 const endpoint = hasImages ? '/upload' : '/chat';
-                updateProgress(10);
+                updateProgress(10, hasImages ? 'Analyzing images...' : 'Processing query...');
                 const res = await fetchWithRetry(endpoint, {
                     method: 'POST',
                     body: formData
@@ -975,9 +960,21 @@
                     if (res.status === 429 && retryAfter) {
                         message += ` Please try again in ${retryAfter} seconds.`;
                     } else if (res.status === 400) {
-                        message = `Invalid request: ${errorMsg.error}.`;
+                        if (message.includes('Invalid file type') || message.includes('Invalid image data')) {
+                            message = `${errorMsg.error} Please upload a valid PNG or JPG image. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
+                        } else if (message.includes('does not appear to be a plant')) {
+                            message = `${errorMsg.error} Please upload an image of a plant. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
+                        } else {
+                            message = `${errorMsg.error} Please check your input and try again. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
+                        }
                     } else if (res.status === 500) {
-                        message = `Server error: ${errorMsg.error}.`;
+                        if (message.includes('Unable to validate Plant.id API key')) {
+                            message = `Unable to validate API key. Please try again or contact support. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
+                        } else if (message.includes('timed out')) {
+                            message = `Plant.id API timed out. Please try again. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
+                        } else {
+                            message = `Server error: ${errorMsg.error}. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
+                        }
                     }
                     throw new Error(message);
                 }
@@ -988,36 +985,24 @@
                 if (data.error) {
                     addMessage('error', data.error);
                 } else if (hasImages) {
+                    const scientificName = data.scientific_name === 'Unknown' ? 'Not identified' : data.scientific_name;
                     const response = `
                         <div class="prose">
-                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">🔍 Plant Analysis Results</h4>
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">Plant Analysis Results</h4>
                             <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
                                 <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
-                                <p><strong>Scientific Name:</strong> ${data.scientific_name}</p>
+                                <p><strong>Scientific Name:</strong> ${scientificName}</p>
                                 <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
                             </div>
-                            <h4 style="color: var(--warning); margin-bottom: 0.5rem;">💡 Recommended Treatment</h4>
+                            <h4 style="color: var(--warning); margin-bottom: 0.5rem;">Recommended Treatment</h4>
                             <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
                                 ${marked.parse(data.remedy)}
                             </div>
                         </div>
                     `;
-                    if (data.typing_effect) {
-                        addMessage('bot', '');
-                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
-                        await typeResponse(response, lastMessage);
-                    } else {
-                        addMessage('bot', response);
-                    }
+                    addMessage('bot', response);
                 } else {
-                    const response = data.response;
-                    if (data.typing_effect) {
-                        addMessage('bot', '');
-                        const lastMessage = chatArea.lastChild.querySelector('.message-content');
-                        await typeResponse(response, lastMessage);
-                    } else {
-                        addMessage('bot', `<div class="prose">${marked.parse(response)}</div>`);
-                    }
+                    addMessage('bot', `<div class="prose">${marked.parse(data.response)}</div>`);
                 }
             } catch (error) {
                 removeMessage(loadingId);
@@ -1040,12 +1025,14 @@
                 const response = await fetch(url, options);
                 if (response.status === 429 && retries > 0) {
                     const retryAfter = parseInt(response.headers.get('Retry-After') || backoff / 1000);
+                    updateProgress(50, `Rate limit reached, retrying in ${retryAfter} seconds...`);
                     await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
                     return fetchWithRetry(url, options, retries - 1, backoff * 2);
                 }
                 return response;
             } catch (error) {
                 if (retries > 0) {
+                    updateProgress(50, `Request failed, retrying in ${backoff / 1000} seconds...`);
                     await new Promise(resolve => setTimeout(resolve, backoff));
                     return fetchWithRetry(url, options, retries - 1, backoff * 2);
                 }
@@ -1063,11 +1050,14 @@
             avatar.className = 'message-avatar';
             
             if (type === 'user') {
-                avatar.textContent = '🙎';
+                avatar.innerHTML = '<span>👤</span>';
+                avatar.setAttribute('aria-label', 'User message with person emoji');
             } else if (type === 'bot') {
-                avatar.textContent = '🤖';
+                avatar.innerHTML = '<span>🤖</span>';
+                avatar.setAttribute('aria-label', 'Bot message with robot emoji');
             } else if (type === 'error') {
-                avatar.textContent = '⚠️';
+                avatar.innerHTML = '<span>⚠️</span>';
+                avatar.setAttribute('aria-label', 'Error message with warning emoji');
             }
             
             const messageContent = document.createElement('div');
