@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot 🌾 - Your Smart Agricultural Assistant</title>
+    <link rel="icon" href="data:;base64,=" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
     <style>
@@ -49,7 +50,7 @@
             bottom: 0;
             background: 
                 radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at iks 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
             pointer-events: none;
             z-index: -1;
         }
@@ -555,7 +556,7 @@
         }
 
         .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
-            color: var(--text-primary);
+            color(schedule:6px;color: var(--text-primary);
         }
     </style>
 </head>
@@ -629,8 +630,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'agribot-cache-v2';
-        const urlsToCache = ['/', '/index.html'];
+        const CACHE_NAME = 'agribot-cache-v3';
+        const urlsToCache = ['/static/style.css', '/static/script.js'];
         const registerServiceWorker = async () => {
             if ('serviceWorker' in navigator) {
                 try {
@@ -644,6 +645,10 @@
                                 );
                             });
                             self.addEventListener('fetch', event => {
+                                const url = new URL(event.request.url);
+                                if (url.pathname.startsWith('/api/') || ['/chat', '/upload', '/set_prefs'].includes(url.pathname)) {
+                                    return fetch(event.request);
+                                }
                                 event.respondWith(
                                     caches.match(event.request)
                                         .then(response => response || fetch(event.request))
@@ -679,6 +684,8 @@
         let isProcessing = false;
         let currentRegion = 'India';
         let currentLanguage = 'en';
+        let lastRequestTime = 0;
+        const REQUEST_DELAY = 2000; // 2 seconds
 
         const chatArea = document.getElementById('chat-area');
         const messageInput = document.getElementById('message-input');
@@ -785,6 +792,13 @@
         }
 
         async function setPreferences() {
+            const now = Date.now();
+            if (now - lastRequestTime < REQUEST_DELAY) {
+                addMessage('error', `Please wait ${Math.ceil((REQUEST_DELAY - (now - lastRequestTime)) / 1000)} seconds before setting preferences again.`);
+                return;
+            }
+            lastRequestTime = now;
+
             const region = regionInput.value.trim() || 'India';
             const language = languageSelect.value;
             
@@ -802,9 +816,20 @@
                     body: formData
                 });
                 updateProgress(50);
-                if (!res.ok) throw new Error('Failed to set preferences');
+                
+                if (!res.ok) {
+                    const errorMsg = await res.json();
+                    const retryAfter = res.headers.get('Retry-After');
+                    let message = `Error setting preferences: ${errorMsg.error || 'Unknown error'}.`;
+                    if (res.status === 429 && retryAfter) {
+                        message += ` Please try again in ${retryAfter} seconds.`;
+                    }
+                    throw new Error(message);
+                }
+                
                 const data = await res.json();
                 updateProgress(100);
+                
                 if (data.status === 'success') {
                     localStorage.setItem('userPrefs', JSON.stringify({
                         region: region,
@@ -817,7 +842,7 @@
                 }
             } catch (error) {
                 updateProgress(100);
-                addMessage('error', `Error setting preferences: ${error.message}. <a href="#" onclick="setPreferences()">Retry</a>`);
+                addMessage('error', error.message);
             }
         }
 
@@ -888,6 +913,13 @@
         }
 
         async function sendMessage() {
+            const now = Date.now();
+            if (now - lastRequestTime < REQUEST_DELAY) {
+                addMessage('error', `Please wait ${Math.ceil((REQUEST_DELAY - (now - lastRequestTime)) / 1000)} seconds before sending another message.`);
+                return;
+            }
+            lastRequestTime = now;
+
             if (isProcessing) return;
             
             const message = messageInput.value.trim();
@@ -928,16 +960,26 @@
             try {
                 const endpoint = hasImages ? '/upload' : '/chat';
                 updateProgress(10);
-                const res = await fetch(endpoint, {
+                const res = await fetchWithRetry(endpoint, {
                     method: 'POST',
                     body: formData
-                });
+                }, 3, 2000);
                 updateProgress(50);
                 
                 removeMessage(loadingId);
                 
                 if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
+                    const errorMsg = await res.json();
+                    const retryAfter = res.headers.get('Retry-After');
+                    let message = `Error: ${errorMsg.error || 'Unknown error'}.`;
+                    if (res.status === 429 && retryAfter) {
+                        message += ` Please try again in ${retryAfter} seconds.`;
+                    } else if (res.status === 400) {
+                        message = `Invalid request: ${errorMsg.error}.`;
+                    } else if (res.status === 500) {
+                        message = `Server error: ${errorMsg.error}.`;
+                    }
+                    throw new Error(message);
                 }
                 
                 const data = await res.json();
@@ -980,7 +1022,7 @@
             } catch (error) {
                 removeMessage(loadingId);
                 updateProgress(100);
-                addMessage('error', `Error: Failed to connect to server: ${error.message}. <a href="#" onclick="sendMessage()">Retry</a>`);
+                addMessage('error', error.message);
             }
             
             messageInput.value = '';
@@ -991,6 +1033,24 @@
             isProcessing = false;
             sendBtn.disabled = false;
             messageInput.focus();
+        }
+
+        async function fetchWithRetry(url, options, retries, backoff) {
+            try {
+                const response = await fetch(url, options);
+                if (response.status === 429 && retries > 0) {
+                    const retryAfter = parseInt(response.headers.get('Retry-After') || backoff / 1000);
+                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+                return response;
+            } catch (error) {
+                if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+                throw error;
+            }
         }
 
         function addMessage(type, content, isLoading = false) {
