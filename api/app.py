@@ -32,6 +32,35 @@ identification_cache = {}
 ALLOWED_TAGS = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'strong', 'em', 'br', 'div', 'span']
 ALLOWED_ATTRIBUTES = {'a': ['href'], 'img': ['src', 'alt']}
 
+def validate_api_key():
+    """Validate PLANT_ID_API_KEY with a lightweight test request to /v3/identification."""
+    if not PLANT_ID_API_KEY:
+        logging.warning("PLANT_ID_API_KEY is missing")
+        return False
+    try:
+        # Create a minimal dummy image (1x1 pixel JPEG)
+        img = Image.new('RGB', (1, 1), color='white')
+        buffer = io.BytesIO()
+        img.save(buffer, format='JPEG')
+        encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        encoded_image = f"data:image/jpeg;base64,{encoded}"
+
+        response = requests.post(
+            "https://api.plant.id/v3/identification",
+            headers={"Content-Type": "application/json", "Api-Key": PLANT_ID_API_KEY},
+            json={"images": [encoded_image], "similar_images": True},
+            timeout=5
+        )
+        response.raise_for_status()
+        logging.info(f"Plant.id API key validated successfully, key: {PLANT_ID_API_KEY[:4]}****")
+        return True
+    except requests.exceptions.HTTPError as e:
+        logging.warning(f"Plant.id API key validation failed: {str(e)}, response: {e.response.text if e.response else 'No response'}")
+        return False
+    except requests.RequestException as e:
+        logging.warning(f"Plant.id API key validation failed: {str(e)}")
+        return False
+
 class LLMClient:
     def __init__(self):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
@@ -51,7 +80,7 @@ class LLMClient:
             "X-Title": self.site_name,
             "Content-Type": "application/json"
         }
-        for attempt in range(5):  # Increased to 5 retries
+        for attempt in range(5):
             try:
                 response = requests.post(
                     "https://openrouter.ai/api/v1/chat/completions",
@@ -62,10 +91,10 @@ class LLMClient:
                         "max_tokens": max_tokens,
                         "temperature": temperature
                     }),
-                    timeout=5
+                    timeout=15
                 )
                 if response.status_code == 429:
-                    wait_time = (2 ** attempt) + (attempt * 1)  # Increased backoff
+                    wait_time = (2 ** attempt) + (attempt * 1)
                     logging.warning(f"OpenRouter rate limit hit, retrying in {wait_time} seconds")
                     time.sleep(wait_time)
                     continue
@@ -76,6 +105,12 @@ class LLMClient:
                 selected_model = data.get('model', 'deepseek/deepseek-chat-v3-0324:free')
                 logging.info(f"OpenRouter selected model: {selected_model}")
                 return {"content": data['choices'][0]['message']['content'].strip(), "model": selected_model}
+            except requests.exceptions.Timeout:
+                logging.error(f"OpenRouter API timeout after 15 seconds, attempt {attempt + 1}/5")
+                if attempt == 4:
+                    return {"error": "OpenRouter API timed out after multiple attempts. Please try again later or check your network connection.", "model": "none"}
+                wait_time = (2 ** attempt) + (attempt * 1)
+                time.sleep(wait_time)
             except requests.exceptions.HTTPError as e:
                 if e.response.status_code in (401, 402, 404):
                     if e.response.status_code == 401:
@@ -92,7 +127,7 @@ class LLMClient:
             except Exception as e:
                 logging.error(f"OpenRouter API query failed: {str(e)}")
                 return {"error": f"OpenRouter API query failed: {str(e)}", "model": "none"}
-        return {"error": "Rate limit exceeded. Please try again later. <a href='#' onclick='sendMessage()'>Retry</a>", "model": "none"}
+        return {"error": "Rate limit exceeded or connection issues. Please try again later. <a href='#' onclick='sendMessage()'>Retry</a>", "model": "none"}
 
 llm_client = LLMClient()
 
@@ -116,9 +151,6 @@ def format_text_for_display(text):
                                u"\u3030"
                                "]+", flags=re.UNICODE)
     text = emoji_pattern.sub('', text)
-    return convert_markdown_to_html(text)
-
-def convert_markdown_to_html(text):
     html = markdown.markdown(text, extensions=['extra'])
     return bleach.clean(html, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
 
@@ -131,10 +163,11 @@ def process_image(file):
         img.verify()
         img = Image.open(file)
         img = img.convert('RGB')
-        img = img.resize((400, 300), Image.Resampling.LANCZOS)  # Match your settings
+        img = img.resize((400, 300), Image.Resampling.LANCZOS)
         buffer = io.BytesIO()
-        img.save(buffer, format='JPEG', quality=85)  # Match your settings
-        return base64.b64encode(buffer.getvalue()).decode("utf-8")
+        img.save(buffer, format='JPEG', quality=85)
+        encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        return f"data:image/jpeg;base64,{encoded}"
     except Exception as e:
         logging.error(f"Image processing failed: {str(e)}")
         return None
@@ -155,147 +188,6 @@ def translate_text(text, source_lang, target_lang):
         logging.error(f"Translation failed: {data['error']}")
         return text
     return data['content']
-
-@app.errorhandler(Exception)
-def handle_error(error):
-    logging.error(f"Server error: {str(error)}", exc_info=True)
-    response = make_response(jsonify({"error": f"Internal server error. Please try again later. <a href='#' onclick='sendMessage()'>Retry</a>", "typing_effect": True}), 500)
-    response.headers['X-RateLimit-Limit'] = 100
-    response.headers['X-RateLimit-Remaining'] = 99
-    return response
-
-@app.route('/')
-def index():
-    try:
-        response = make_response(render_template('index.html'))
-        response.headers['X-RateLimit-Limit'] = 100
-        response.headers['X-RateLimit-Remaining'] = 99
-        return response
-    except Exception as e:
-        logging.error(f"Failed to render index.html: {str(e)}")
-        response = make_response(jsonify({"error": "Failed to load page. Please try again.", "typing_effect": True}), 500)
-        response.headers['X-RateLimit-Limit'] = 100
-        response.headers['X-RateLimit-Remaining'] = 99
-        return response
-
-@app.route('/favicon.ico')
-@app.route('/favicon.png')
-def favicon():
-    return '', 204  # Prevent 404/500 errors
-
-@app.route('/set_prefs', methods=['POST'])
-def set_prefs():
-    try:
-        if 'region' not in request.form or 'language' not in request.form:
-            error_msg = "Missing region or language in request."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
-            response.headers['X-RateLimit-Limit'] = 100
-            response.headers['X-RateLimit-Remaining'] = 99
-            return response
-        region = request.form['region'].strip()
-        language = request.form['language'].strip()
-        if not region or not language:
-            error_msg = "Region or language cannot be empty."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
-            response.headers['X-RateLimit-Limit'] = 100
-            response.headers['X-RateLimit-Remaining'] = 99
-            return response
-        user_prefs['region'] = region
-        user_prefs['language'] = language
-        logging.info(f"User preferences set: region={region}, language={language}")
-        response = make_response(jsonify({"status": "success"}))
-        response.headers['X-RateLimit-Limit'] = 100
-        response.headers['X-RateLimit-Remaining'] = 99
-        return response
-    except Exception as e:
-        logging.error(f"Error setting preferences: {str(e)}")
-        response = make_response(jsonify({"error": f"Error setting preferences: {str(e)}. <a href='#' onclick='setPreferences()'>Retry</a>", "typing_effect": True}), 500)
-        response.headers['X-RateLimit-Limit'] = 100
-        response.headers['X-RateLimit-Remaining'] = 99
-        return response
-
-@app.route('/chat', methods=['POST'])
-def chat():
-    try:
-        if 'query' not in request.form:
-            error_msg = "No query provided. Please try again."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
-            response.headers['X-RateLimit-Limit'] = 100
-            response.headers['X-RateLimit-Remaining'] = 99
-            return response
-        query = request.form['query'].strip()
-        if not query:
-            error_msg = "Query cannot be empty. Please try again."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
-            response.headers['X-RateLimit-Limit'] = 100
-            response.headers['X-RateLimit-Remaining'] = 99
-            return response
-        
-        query_en = translate_text(query, user_prefs['language'], "en") if user_prefs['language'] != "en" else query
-        logging.info(f"Translated query to English: {query_en}")
-        
-        system_prompt = f"""
-        You are AgriBot, an AI assistant for Indian agriculture. Provide clear, concise, and actionable advice for {user_prefs['region'] or 'India'} in English. Consider local weather, cultural practices, and locally available remedies. 
-
-        Format your response using clean markdown:
-        - Use ## for main headings
-        - Use ### for subheadings
-        - Use - for bullet points
-        - Use **bold** for emphasis
-        - Use proper paragraph breaks
-        - Be conversational and friendly
-        - Do not use emojis or special characters
-
-        Include detailed advice on soil management, pest control, or irrigation specific to the region.
-        """
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": query_en}
-        ]
-        
-        data = llm_client.query(messages, max_tokens=1000, temperature=0.5)
-        
-        if 'error' in data:
-            error_msg = data['error']
-            if "Payment required" in error_msg:
-                fallback_response = f"""
-## Unable to Process Query
-Due to API limitations, we cannot process your query right now. Please try the following:
-- Upload an image for plant identification and disease assessment.
-- Check your internet connection and try again.
-- Contact local agricultural extension services in {user_prefs['region'] or 'India'} for assistance.
-                """
-                response = make_response(jsonify({
-                    "response": format_text_for_display(translate_text(fallback_response, "en", user_prefs['language'])),
-                    "model": "none",
-                    "typing_effect": True
-                }))
-                response.headers['X-RateLimit-Limit'] = 100
-                response.headers['X-RateLimit-Remaining'] = 99
-                return response
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 429)
-            response.headers['X-RateLimit-Limit'] = 100
-            response.headers['X-RateLimit-Remaining'] = 99
-            response.headers['Retry-After'] = 5
-            return response
-        
-        response_text = translate_text(data['content'], "en", user_prefs['language'])
-        formatted_response = format_text_for_display(response_text)
-        
-        response = make_response(jsonify({
-            "response": formatted_response,
-            "model": data['model'],
-            "typing_effect": True
-        }))
-        response.headers['X-RateLimit-Limit'] = 100
-        response.headers['X-RateLimit-Remaining'] = 99
-        return response
-    except Exception as e:
-        logging.error(f"Chat endpoint error: {str(e)}")
-        response = make_response(jsonify({"error": f"Chat error: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>", "typing_effect": True}), 500)
-        response.headers['X-RateLimit-Limit'] = 100
-        response.headers['X-RateLimit-Remaining'] = 99
-        return response
 
 @lru_cache(maxsize=100)
 def get_region_specific_remedy(plant_name, scientific_name, disease_name, region, language, plant_id_remedy, disease_description):
@@ -320,13 +212,28 @@ def get_region_specific_remedy(plant_name, scientific_name, disease_name, region
     ]
     data = llm_client.query(messages, max_tokens=1000, temperature=0.5)
     if 'error' in data or 'content' not in data:
+        logging.error(f"Remedy generation failed: {data.get('error', 'Unknown error')}")
         fallback = f"""
-## Treatment
-{plant_id_remedy}
+## Treatment for {plant_name} with {disease_name} in {region or 'India'}
 
-## Note
-For {region or 'India'}, consult local agricultural extension services for region-specific advice due to API limitations.
-        """
+### Organic Treatment
+- Remove and destroy infected plant parts. **Burn**, **bury deeply**, or **dispose** in garbage; do not compost.
+- Apply neem oil or a copper-based organic fungicide, following local agricultural guidelines.
+
+### Chemical Treatment
+- Use a fungicide suitable for {disease_name} on {plant_name}. Consult local agricultural extension services for specific recommendations.
+- **Follow label instructions** and safety precautions when applying chemicals.
+
+### Preventive Measures
+- Ensure proper spacing between plants to improve air circulation.
+- Avoid overhead watering to keep foliage dry.
+- Regularly inspect plants for early signs of disease.
+
+### Important Notes
+- **Monitor plant health** after treatment and reapply as needed.
+- Consider the environmental impact of chemical treatments.
+- For region-specific advice in {region or 'India'}, consult local agricultural extension services.
+"""
         return translate_text(fallback, "en", language), 'none'
     return translate_text(data['content'], "en", language), data['model']
 
@@ -353,44 +260,185 @@ def enhance_identification(plant_name, scientific_name, plant_confidence, diseas
             }
             return (
                 refined.get('plant', plant_name),
-                refined.get('scientific_name', scientific_name),
+                refined.get('scientific_name', scientific_name or "Unknown"),
                 max(plant_confidence, 0.5),
                 refined.get('disease', disease_name),
                 max(disease_confidence, 0.5)
             )
         except json.JSONDecodeError:
             logging.error("Failed to parse OpenRouter JSON response for identification refinement")
-            return plant_name, scientific_name, plant_confidence, disease_name, disease_confidence
-    return plant_name, scientific_name, plant_confidence, disease_name, disease_confidence
+            return plant_name, scientific_name or "Unknown", plant_confidence, disease_name, disease_confidence
+    return plant_name, scientific_name or "Unknown", plant_confidence, disease_name, disease_confidence
 
 @lru_cache(maxsize=100)
 def perenual_validation(plant_name, region):
     if not PERENUAL_API_KEY:
         logging.warning("PERENUAL_API_KEY not found, skipping validation")
-        return plant_name, "", 0.0
+        return plant_name, "Unknown", 0.0
     try:
         response = requests.get(
             f"https://perenual.com/api/species-list?key={PERENUAL_API_KEY}&q={plant_name}",
-            timeout=5
+            timeout=15
         )
         response.raise_for_status()
         data = response.json()
         if not data.get('data'):
-            return plant_name, "", 0.0
+            return plant_name, "Unknown", 0.0
         for plant in data['data']:
             if plant_name.lower() in plant.get('common_name', '').lower():
-                return plant['common_name'], plant.get('scientific_name', [''])[0], 0.8
-        return plant_name, "", 0.0
+                return plant['common_name'], plant.get('scientific_name', ['Unknown'])[0], 0.8
+        return plant_name, "Unknown", 0.0
     except requests.RequestException as e:
         logging.error(f"Perenual API query failed: {str(e)}")
-        return plant_name, "", 0.0
+        return plant_name, "Unknown", 0.0
+
+@app.errorhandler(Exception)
+def handle_error(error):
+    logging.error(f"Server error: {str(error)}", exc_info=True)
+    response = make_response(jsonify({"error": f"Internal server error. Please try again later. <a href='#' onclick='sendMessage()'>Retry</a>", "typing_effect": False}), 500)
+    response.headers['X-RateLimit-Limit'] = 100
+    response.headers['X-RateLimit-Remaining'] = 99
+    return response
+
+@app.route('/')
+def index():
+    try:
+        response = make_response(render_template('index.html'))
+        response.headers['X-RateLimit-Limit'] = 100
+        response.headers['X-RateLimit-Remaining'] = 99
+        return response
+    except Exception as e:
+        logging.error(f"Failed to render index.html: {str(e)}")
+        response = make_response(jsonify({"error": "Failed to load page. Please try again.", "typing_effect": False}), 500)
+        response.headers['X-RateLimit-Limit'] = 100
+        response.headers['X-RateLimit-Remaining'] = 99
+        return response
+
+@app.route('/favicon.ico')
+@app.route('/favicon.png')
+def favicon():
+    return '', 204
+
+@app.route('/set_prefs', methods=['POST'])
+def set_prefs():
+    try:
+        if 'region' not in request.form or 'language' not in request.form:
+            error_msg = "Missing region or language in request."
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
+            response.headers['X-RateLimit-Limit'] = 100
+            response.headers['X-RateLimit-Remaining'] = 99
+            return response
+        region = request.form['region'].strip()
+        language = request.form['language'].strip()
+        if not region or not language:
+            error_msg = "Region or language cannot be empty."
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
+            response.headers['X-RateLimit-Limit'] = 100
+            response.headers['X-RateLimit-Remaining'] = 99
+            return response
+        user_prefs['region'] = region
+        user_prefs['language'] = language
+        logging.info(f"User preferences set: region={region}, language={language}")
+        response = make_response(jsonify({"status": "success"}))
+        response.headers['X-RateLimit-Limit'] = 100
+        response.headers['X-RateLimit-Remaining'] = 99
+        return response
+    except Exception as e:
+        logging.error(f"Error setting preferences: {str(e)}")
+        response = make_response(jsonify({"error": f"Error setting preferences: {str(e)}. <a href='#' onclick='setPreferences()'>Retry</a>", "typing_effect": False}), 500)
+        response.headers['X-RateLimit-Limit'] = 100
+        response.headers['X-RateLimit-Remaining'] = 99
+        return response
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    try:
+        if 'query' not in request.form:
+            error_msg = "No query provided. Please try again."
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
+            response.headers['X-RateLimit-Limit'] = 100
+            response.headers['X-RateLimit-Remaining'] = 99
+            return response
+        query = request.form['query'].strip()
+        if not query:
+            error_msg = "Query cannot be empty. Please try again."
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
+            response.headers['X-RateLimit-Limit'] = 100
+            response.headers['X-RateLimit-Remaining'] = 99
+            return response
+        
+        query_en = translate_text(query, user_prefs['language'], "en") if user_prefs['language'] != "en" else query
+        logging.info(f"Translated query to English: {query_en}")
+        
+        system_prompt = f"""
+        You are AgriBot, an AI assistant for Indian agriculture. Provide clear, concise, and actionable advice for {user_prefs['region'] or 'India'} in English. Consider local weather, cultural practices, and locally available remedies. 
+
+        Format your response using clean markdown:
+        - Use ## for main headings
+        - Use ### for subheadings
+        - Use - for bullet points
+        - Use **bold** for emphasis
+        - Use proper paragraph breaks
+        - Do not use emojis or special characters
+
+        Include detailed advice on soil management, pest control, or irrigation specific to the region. If you cannot provide a specific answer, admit the limitation and suggest consulting local agricultural extension services.
+        """
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": query_en}
+        ]
+        
+        data = llm_client.query(messages, max_tokens=1000, temperature=0.5)
+        if 'error' in data:
+            error_msg = data['error']
+            if "Payment required" in error_msg:
+                fallback_response = f"""
+## Unable to Process Query
+Due to API limitations, we cannot process your query right now. Please try the following:
+
+### Recommendations
+- Upload an image for plant identification and disease assessment.
+- Check your internet connection and try again.
+- Contact local agricultural extension services in {user_prefs['region'] or 'India'} for assistance.
+"""
+                response = make_response(jsonify({
+                    "response": format_text_for_display(translate_text(fallback_response, "en", user_prefs['language'])),
+                    "model": "none",
+                    "typing_effect": False
+                }))
+                response.headers['X-RateLimit-Limit'] = 100
+                response.headers['X-RateLimit-Remaining'] = 99
+                return response
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 429)
+            response.headers['X-RateLimit-Limit'] = 100
+            response.headers['X-RateLimit-Remaining'] = 99
+            response.headers['Retry-After'] = 5
+            return response
+        
+        response_text = translate_text(data['content'], "en", user_prefs['language'])
+        formatted_response = format_text_for_display(response_text)
+        
+        response = make_response(jsonify({
+            "response": formatted_response,
+            "model": data['model'],
+            "typing_effect": False
+        }))
+        response.headers['X-RateLimit-Limit'] = 100
+        response.headers['X-RateLimit-Remaining'] = 99
+        return response
+    except Exception as e:
+        logging.error(f"Chat endpoint error: {str(e)}")
+        response = make_response(jsonify({"error": f"Chat error: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>", "typing_effect": False}), 500)
+        response.headers['X-RateLimit-Limit'] = 100
+        response.headers['X-RateLimit-Remaining'] = 99
+        return response
 
 @app.route('/upload', methods=['POST'])
 def upload():
     try:
         if 'image' not in request.files:
-            error_msg = "No image uploaded."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
+            error_msg = "No image uploaded. Please upload a valid PNG or JPG image."
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
             response.headers['X-RateLimit-Limit'] = 100
             response.headers['X-RateLimit-Remaining'] = 99
             return response
@@ -398,7 +446,7 @@ def upload():
         files = request.files.getlist('image')
         if not files or len(files) > 3:
             error_msg = "Please upload 1-3 images (PNG, JPG, JPEG)."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
             response.headers['X-RateLimit-Limit'] = 100
             response.headers['X-RateLimit-Remaining'] = 99
             return response
@@ -407,119 +455,236 @@ def upload():
         for file in files:
             if not file.filename or not allowed_file(file.filename):
                 error_msg = f"Invalid file type for {file.filename}. Please upload PNG, JPG, or JPEG."
-                response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
+                response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
                 response.headers['X-RateLimit-Limit'] = 100
                 response.headers['X-RateLimit-Remaining'] = 99
                 return response
             encoded = process_image(file)
             if not encoded:
-                error_msg = f"Failed to process image {file.filename}."
-                response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
+                error_msg = f"Failed to process image {file.filename}. Please ensure the image is a valid PNG or JPG."
+                response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
                 response.headers['X-RateLimit-Limit'] = 100
                 response.headers['X-RateLimit-Remaining'] = 99
                 return response
             encoded_images.append(encoded)
 
-        if not PLANT_ID_API_KEY:
-            error_msg = "Plant.id API key is missing."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 500)
-            response.headers['X-RateLimit-Limit'] = 100
-            response.headers['X-RateLimit-Remaining'] = 99
+        if not validate_api_key():
+            logging.warning(f"Proceeding with identification despite API key validation failure, key: {PLANT_ID_API_KEY[:4]}****")
+            error_msg = "Unable to validate Plant.id API key. Attempting identification anyway. If this issue persists, please contact support. <a href='#' onclick='sendMessage()'>Retry</a>"
+            # Do not return error immediately; proceed with identification
+
+        plant_id_response = None # Initialize to None
+        for attempt in range(3):
+            try:
+                plant_id_response = requests.post(
+                    "https://api.plant.id/v3/identification",
+                    headers={"Content-Type": "application/json", "Api-Key": PLANT_ID_API_KEY},
+                    json={
+                        "images": encoded_images,
+                        "similar_images": True
+                    },
+                    timeout=15
+                )
+                if plant_id_response.status_code == 429:
+                    wait_time = (2 ** attempt) + (attempt * 1)
+                    logging.warning(f"Plant.id rate limit hit, retrying in {wait_time} seconds")
+                    time.sleep(wait_time)
+                    continue
+                if plant_id_response.status_code == 400:
+                    error_details = 'Unknown error'
+                    try:
+                        if plant_id_response.text:
+                            error_details = plant_id_response.json().get('error', 'Unknown error')
+                    except json.JSONDecodeError:
+                        error_details = plant_id_response.text or "Bad request with no details"
+
+                    logging.error(f"Plant.id identification API 400 error: {error_details}")
+                    if "temporary" in str(error_details).lower() and attempt < 2:
+                        wait_time = (2 ** attempt) + (attempt * 1)
+                        logging.warning(f"Transient 400 error, retrying in {wait_time} seconds")
+                        time.sleep(wait_time)
+                        continue
+                    error_msg = f"Invalid image data or request format: {error_details}. Please upload a valid PNG or JPG image. <a href='#' onclick='sendMessage()'>Retry</a>"
+                    response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
+                    response.headers['X-RateLimit-Limit'] = 100
+                    response.headers['X-RateLimit-Remaining'] = 99
+                    return response
+                plant_id_response.raise_for_status()
+                break # Exit loop on success
+            except requests.exceptions.Timeout:
+                logging.error(f"Plant.id identification API timeout after 15 seconds, attempt {attempt + 1}/3")
+                if attempt == 2:
+                    error_msg = "Plant.id API timed out after multiple attempts. Please try again later or check your network connection. <a href='#' onclick='sendMessage()'>Retry</a>"
+                    response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 500)
+                    response.headers['X-RateLimit-Limit'] = 100
+                    response.headers['X-RateLimit-Remaining'] = 99
+                    response.headers['Retry-After'] = 5
+                    return response
+                wait_time = (2 ** attempt) + (attempt * 1)
+                time.sleep(wait_time)
+            except requests.exceptions.HTTPError as e:
+                logging.error(f"Plant.id identification API request failed: {str(e)}, response: {e.response.text if e.response else 'No response'}")
+                error_msg = f"Plant identification failed: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>"
+                response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 500)
+                response.headers['X-RateLimit-Limit'] = 100
+                response.headers['X-RateLimit-Remaining'] = 99
+                return response
+        
+        # Check if response was ever successful
+        if plant_id_response is None or not plant_id_response.ok:
+            error_msg = "Failed to get a valid response from Plant.id API after several retries."
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 500)
             return response
 
-        plant_id_response = requests.post(
-            "https://api.plant.id/v2/identify",
-            headers={"Content-Type": "application/json", "Api-Key": PLANT_ID_API_KEY},
-            json={
-                "images": encoded_images,
-                "modifiers": ["similar_images", "crops_fast"],
-                "plant_language": "en",
-                "plant_details": ["common_names", "url", "wiki_description", "taxonomy", "edible_parts"]
-            },
-            timeout=5
-        )
-        plant_id_response.raise_for_status()
         plant_data = plant_id_response.json()
-        if not plant_data.get('suggestions'):
-            error_msg = "Plant identification failed."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
+        if not plant_data.get('result', {}).get('is_plant', {}).get('binary', False):
+            error_msg = "The uploaded image does not appear to be a plant. Please upload a valid plant image."
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
             response.headers['X-RateLimit-Limit'] = 100
             response.headers['X-RateLimit-Remaining'] = 99
             return response
-        suggestion = plant_data['suggestions'][0]
-        plant_name = suggestion['plant_details']['common_names'][0] if suggestion['plant_details']['common_names'] else suggestion['plant_name'] or "Unknown plant"
-        scientific_name = suggestion['plant_details'].get('scientific_name', 'Unknown scientific name')
-        plant_confidence = suggestion['probability']
 
-        if plant_confidence < 0.3 and PERENUAL_API_KEY:
-            plant_name, scientific_name, perenual_confidence = perenual_validation(plant_name, user_prefs['region'])
-            plant_confidence = max(plant_confidence, perenual_confidence)
+        suggestion = plant_data['result']['classification']['suggestions'][0]
+        plant_name = suggestion['name'] or "Unknown plant"
+        scientific_name = suggestion.get('details', {}).get('scientific_name', 'Unknown')
+        plant_confidence = suggestion.get('probability', 0.0)
 
-        disease_resp = requests.post(
-            "https://api.plant.id/v2/health_assessment",
-            headers={"Content-Type": "application/json", "Api-Key": PLANT_ID_API_KEY},
-            json={
-                "images": encoded_images,
-                "disease_details": ["common_names", "url", "description", "treatment"]
-            },
-            timeout=5
-        )
-        disease_resp.raise_for_status()
+        disease_resp = None # Initialize to None
+        for attempt in range(3):
+            try:
+                disease_resp = requests.post(
+                    "https://api.plant.id/v3/health_assessment",
+                    headers={"Content-Type": "application/json", "Api-Key": PLANT_ID_API_KEY},
+                    json={
+                        "images": encoded_images
+                    },
+                    timeout=15
+                )
+                if disease_resp.status_code == 429:
+                    wait_time = (2 ** attempt) + (attempt * 1)
+                    logging.warning(f"Plant.id health assessment rate limit hit, retrying in {wait_time} seconds")
+                    time.sleep(wait_time)
+                    continue
+                if disease_resp.status_code == 400:
+                    error_details = 'Unknown error'
+                    try:
+                        if disease_resp.text:
+                            error_details = disease_resp.json().get('error', 'Unknown error')
+                    except json.JSONDecodeError:
+                        error_details = disease_resp.text or "Bad request with no details"
+
+                    logging.error(f"Plant.id health assessment API 400 error: {error_details}")
+                    if "temporary" in str(error_details).lower() and attempt < 2:
+                        wait_time = (2 ** attempt) + (attempt * 1)
+                        logging.warning(f"Transient 400 error, retrying in {wait_time} seconds")
+                        time.sleep(wait_time)
+                        continue
+                    error_msg = f"Invalid image data or request format: {error_details}. Please upload a valid PNG or JPG image. <a href='#' onclick='sendMessage()'>Retry</a>"
+                    response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
+                    response.headers['X-RateLimit-Limit'] = 100
+                    response.headers['X-RateLimit-Remaining'] = 99
+                    return response
+                disease_resp.raise_for_status()
+                break # Exit loop on success
+            except requests.exceptions.Timeout:
+                logging.error(f"Plant.id health assessment API timeout after 15 seconds, attempt {attempt + 1}/3")
+                if attempt == 2:
+                    error_msg = "Plant.id health assessment API timed out after multiple attempts. Please try again later or check your network connection. <a href='#' onclick='sendMessage()'>Retry</a>"
+                    response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 500)
+                    response.headers['X-RateLimit-Limit'] = 100
+                    response.headers['X-RateLimit-Remaining'] = 99
+                    response.headers['Retry-After'] = 5
+                    return response
+                wait_time = (2 ** attempt) + (attempt * 1)
+                time.sleep(wait_time)
+            except requests.exceptions.HTTPError as e:
+                logging.error(f"Plant.id health assessment API request failed: {str(e)}, response: {e.response.text if e.response else 'No response'}")
+                error_msg = f"Disease assessment failed: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>"
+                response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 500)
+                response.headers['X-RateLimit-Limit'] = 100
+                response.headers['X-RateLimit-Remaining'] = 99
+                return response
+        
+        # Check if response was ever successful
+        if disease_resp is None or not disease_resp.ok:
+            error_msg = "Failed to get a valid response from Plant.id health assessment API after several retries."
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 500)
+            return response
+
         disease_data = disease_resp.json()
-        if not disease_data.get('health_assessment'):
-            error_msg = "Disease assessment failed."
-            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": True}), 400)
+        
+        # Add detailed logging to debug the response structure
+        logging.info(f"Received from Plant.id health assessment: {json.dumps(disease_data, indent=2)}")
+
+        # FIX: Check for the correct keys in the health assessment response
+        if not disease_data.get('result', {}).get('is_healthy'):
+            error_msg = "Disease assessment failed. Please upload a valid plant image."
+            # Log the unexpected structure before returning the error
+            logging.error(f"Health assessment keys missing in API response. Data: {disease_data}")
+            response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 400)
             response.headers['X-RateLimit-Limit'] = 100
             response.headers['X-RateLimit-Remaining'] = 99
             return response
 
-        if disease_data['health_assessment']['is_healthy']:
+        if disease_data['result']['is_healthy']['binary']:
             disease_name = "Healthy"
+            disease_confidence = disease_data['result']['is_healthy']['probability']
             remedy = f"""
-## Plant Health Status
-Your plant appears to be in good health. Here are some care recommendations to maintain its vitality:
+## Plant Health Status for {plant_name} in {user_prefs['region'] or 'India'}
 
-### Watering Guidelines
-- Maintain consistent watering schedule
-- Avoid waterlogging and overwatering
-- Adjust watering frequency based on {user_prefs['region'] or 'local'} climate conditions
-
-### Environmental Care
-- Ensure adequate sunlight as per plant requirements
-- Provide proper ventilation
-- Monitor temperature changes
+### General Care
+- **Watering**: Maintain a consistent schedule, avoiding waterlogging. Adjust based on {user_prefs['region'] or 'local'} climate.
+- **Sunlight**: Ensure adequate exposure as per {plant_name} requirements.
+- **Ventilation**: Provide good air circulation to prevent fungal growth.
 
 ### Maintenance
-- Regular pruning: Remove dead or yellowing leaves
-- Soil health: Use organic compost periodically
-- pH monitoring: Check soil pH levels monthly
+- **Pruning**: Remove dead or yellowing leaves regularly.
+- **Soil**: Use organic compost to enrich soil periodically.
+- **Monitoring**: Check soil pH and nutrient levels monthly.
 
 ### Regional Considerations
-For {user_prefs['region'] or 'India'}, consider seasonal variations like monsoon and dry periods when planning your care routine.
-            """
-            disease_confidence = disease_data['health_assessment']['is_healthy_probability']
+- For {user_prefs['region'] or 'India'}, adapt care to seasonal variations like monsoon or dry periods.
+"""
             selected_model = 'none'
         else:
-            issue = disease_data['health_assessment']['diseases'][0]
-            disease_name = issue['name']
-            disease_confidence = issue['probability']
-            disease_description = issue.get('disease_details', {}).get('description', 'No description available')
-            treatment_info = issue.get('disease_details', {}).get('treatment', {})
-            biological = treatment_info.get('biological', ['No biological treatment available'])[0]
-            chemical = treatment_info.get('chemical', ['No chemical treatment available'])[0]
-            remedy = f"""
-## Treatment Options
+            # FIX: Get disease suggestions from the correct key
+            suggestions = disease_data['result']['disease']['suggestions']
+            if not suggestions:
+                # Handle case where plant is not healthy but no disease is suggested
+                disease_name = "Unknown Issue"
+                disease_confidence = 1.0 - disease_data['result']['is_healthy']['probability']
+                disease_description = "The plant appears to be unhealthy, but a specific disease could not be identified. Please check for common issues like pests, nutrient deficiencies, or watering problems."
+                remedy = "## General Advice for Unhealthy Plants\n\n- **Inspect Closely**: Look for signs of pests on the undersides of leaves.\n- **Check Soil Moisture**: Ensure the soil is not too wet or too dry.\n- **Nutrient Check**: Consider applying a balanced fertilizer if the plant shows signs of yellowing."
+            else:
+                issue = suggestions[0]
+                disease_name = issue['name']
+                disease_confidence = issue['probability']
+                # Details like description and treatment are not provided in this response structure, so we create generic ones.
+                disease_description = issue.get('details', {}).get('description', 'No specific description available from the API.')
+                treatment_info = issue.get('details', {}).get('treatment', {})
+                biological = treatment_info.get('biological', ['Remove and destroy infected parts.'])[0]
+                chemical = treatment_info.get('chemical', ['Consult a local expert for chemical treatment options.'])[0]
+                remedy = f"""
+## Treatment for {plant_name} with {disease_name} in {user_prefs['region'] or 'India'}
+
 ### Organic Treatment
-{biological}
+- {biological}
+- Apply neem oil or copper-based fungicides, following local guidelines.
 
 ### Chemical Treatment
-{chemical}
+- {chemical}
+- **Follow label instructions** and safety precautions.
+
+### Preventive Measures
+- Ensure proper spacing for air circulation.
+- Avoid overhead watering to keep foliage dry.
+- Regularly inspect for early disease signs.
 
 ### Important Notes
-- Always follow safety guidelines when applying treatments
-- Consider environmental impact of chemical treatments
-- Monitor plant response after treatment
-            """
+- **Monitor plant health** post-treatment.
+- Consider environmental impacts of chemicals.
+- Consult local agricultural extension services in {user_prefs['region'] or 'India'} for tailored advice.
+"""
 
         cache_key_id = f"{plant_name}:{scientific_name}:{disease_name}:{user_prefs['region']}:{user_prefs['language']}"
         if cache_key_id in identification_cache:
@@ -551,19 +716,20 @@ For {user_prefs['region'] or 'India'}, consider seasonal variations like monsoon
             "disease_confidence": f"{disease_confidence:.2%}",
             "remedy": formatted_remedy,
             "model": selected_model,
-            "typing_effect": True
+            "typing_effect": False
         }))
         response.headers['X-RateLimit-Limit'] = 100
         response.headers['X-RateLimit-Remaining'] = 99
         return response
-    except (IOError, requests.RequestException) as e:
-        logging.error(f"Upload endpoint error: {str(e)}")
-        response = make_response(jsonify({"error": translate_text(f"Failed to process image or connect to API: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>", "en", user_prefs['language']), "typing_effect": True}), 500)
+    except Exception as e:
+        logging.error(f"Upload endpoint error: {str(e)}", exc_info=True) # Added exc_info for better logging
+        error_msg = f"Failed to process image or connect to API: {str(e)}. <a href='#' onclick='sendMessage()'>Retry</a>"
+        response = make_response(jsonify({"error": translate_text(error_msg, "en", user_prefs['language']), "typing_effect": False}), 500)
         response.headers['X-RateLimit-Limit'] = 100
         response.headers['X-RateLimit-Remaining'] = 99
+        response.headers['Retry-After'] = 5
         return response
 
 if __name__ == "__main__":
-    import gunicorn
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
