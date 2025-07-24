@@ -565,6 +565,48 @@
             margin-bottom: 0.25em;
         }
 
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+            margin-bottom: 1em;
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            overflow: hidden; /* Ensures border-radius is respected by children */
+        }
+
+        .prose th, .prose td {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--glass-border);
+            text-align: left;
+        }
+
+        .prose th {
+            background-color: var(--dark-hover);
+            font-weight: 600;
+        }
+
+        .prose tr:nth-child(even) {
+            background-color: var(--dark-surface);
+        }
+
+        .prose tr:nth-child(odd) {
+            background-color: var(--dark-hover);
+        }
+
+        /* Light theme adjustments for table header */
+        .light-theme .prose th {
+            background-color: #f1f5f9; /* A light gray for the header in light mode */
+        }
+
+        .light-theme .prose tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+
+        .light-theme .prose tr:nth-child(odd) {
+            background-color: #f8fafc;
+        }
+
         .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
             color: var(--text-primary);
         }
