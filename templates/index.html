@@ -95,7 +95,7 @@
 
         .container {
             width: 100%;
-            padding: 2rem 1rem;
+            padding: 0 1rem 2rem 1rem; /* Removed top padding */
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -107,6 +107,7 @@
                 width: 75%;
                 max-width: 1100px;
                 margin: 0 auto;
+                padding: 0 0 2rem 0;
             }
         }
 
@@ -118,17 +119,30 @@
         .header {
             text-align: center;
             margin-bottom: 2rem;
-            position: relative;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: rgba(var(--surface-rgb), 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        body.light-theme .header {
+             background-color: rgba(246, 248, 250, 0.8);
         }
 
         .header h1 {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 800;
             background: var(--primary-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.5rem;
+            margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -139,17 +153,11 @@
              -webkit-text-fill-color: initial; /* Allow emoji color */
         }
 
-        .header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
         .theme-toggle {
             position: absolute;
-            top: 0;
-            right: 0;
+            top: 50%;
+            right: 1rem;
+            transform: translateY(-50%);
             background: var(--surface);
             border: 1px solid var(--border-color);
             border-radius: 50%;
@@ -165,7 +173,7 @@
 
         .theme-toggle:hover {
             border-color: var(--accent);
-            transform: scale(1.1) rotate(15deg);
+            transform: translateY(-50%) scale(1.1) rotate(15deg);
         }
 
         /* * ==============================================
@@ -177,6 +185,7 @@
             border: 1px solid var(--border-color);
             border-radius: 1rem;
             padding: 1.5rem;
+            margin-top: 2rem; /* Added margin to separate from sticky header */
             margin-bottom: 2rem;
             box-shadow: var(--shadow-color);
             transition: all 0.3s ease;
@@ -325,6 +334,10 @@
             position: relative;
             word-wrap: break-word;
         }
+        
+        .message.bot .message-content:hover .copy-btn {
+            opacity: 1;
+        }
 
         .message.user .message-content {
             background: var(--accent);
@@ -436,25 +449,72 @@
             height: 100%;
             cursor: pointer;
         }
-
-        .send-btn {
-            background: var(--accent);
+        
+        /* New Send Button Styles */
+        .send-btn-new {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 10px;
             color: white;
-            border: none;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: solid 2px black;
+            letter-spacing: 1px;
+            font-weight: 600;
+            font-size: 17px;
+            background-color: var(--accent);
+            border-radius: 50px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            min-height: 40px;
+        }
+
+        .send-btn-new:active {
+            transform: scale(0.9);
+            transition: all 100ms ease;
+        }
+
+        .send-btn-new svg {
+            transition: all 0.5s ease;
+            z-index: 2;
+        }
+
+        .send-btn-new .play {
+            transition: all 0.5s ease;
+            transition-delay: 300ms;
+        }
+
+        .send-btn-new:hover svg {
+            transform: scale(3) translate(50%);
+        }
+
+        .send-btn-new .now {
+            position: absolute;
+            left: 0;
+            transform: translateX(-100%);
+            transition: all 0.5s ease;
+            z-index: 2;
+        }
+
+        .send-btn-new:hover .now {
+            transform: translateX(10px);
+            transition-delay: 300ms;
+        }
+
+        .send-btn-new:hover .play {
+            transform: translateX(200%);
+            transition-delay: 300ms;
         }
         
-        .send-btn.stop-btn {
-            background: var(--error);
+        .send-btn-new.stop-btn {
+            background-color: var(--error);
         }
-
-        .send-btn:hover:not(:disabled) {
-            transform: scale(1.1);
-        }
-
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: var(--border-color);
+        
+        .send-btn-new.stop-btn:hover svg {
+            transform: none;
         }
 
         /* * ==============================================
@@ -475,6 +535,7 @@
             width: 80px;
             height: 80px;
             border: 2px solid var(--border-color);
+            animation: fadeInUp 0.3s ease-out;
         }
 
         .preview-item img { width: 100%; height: 100%; object-fit: cover; }
@@ -509,6 +570,12 @@
             align-items: center;
             justify-content: center;
             height: 100%;
+        }
+        
+        .welcome-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: float 3s ease-in-out infinite;
         }
 
         .welcome-message h3 {
@@ -570,6 +637,15 @@
             padding: 0 1.5rem;
             margin-bottom: 1rem;
         }
+        
+        .typing-cursor {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            from, to { color: transparent; }
+            50% { color: var(--text-primary); }
+        }
 
         /* * ==============================================
          * MARKDOWN PROSE STYLES
@@ -577,34 +653,43 @@
          */
         .prose { max-width: 100%; overflow-x: auto; }
         .prose h1, .prose h2, .prose h3, .prose h4 {
-            margin-top: 1em;
-            margin-bottom: 0.5em;
+            margin-top: 1.25em;
+            margin-bottom: 0.75em;
             font-weight: 700;
             line-height: 1.3;
         }
         .prose h1 { font-size: 1.5em; }
         .prose h2 { font-size: 1.25em; }
         .prose h3 { font-size: 1.1em; }
-        .prose p { margin-bottom: 0.75em; line-height: 1.6; }
+        .prose p { margin-bottom: 1em; line-height: 1.7; }
         .prose ul, .prose ol { list-style-position: outside; padding-left: 1.5em; margin-bottom: 1em; }
         .prose li { margin-bottom: 0.5em; }
         .prose table {
             width: 100%;
             border-collapse: collapse;
             margin: 1.5em 0;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             overflow: hidden;
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-color);
         }
         .prose th, .prose td {
             padding: 0.75rem 1rem;
-            border: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
             text-align: left;
         }
         .prose th {
-            background-color: var(--bg);
+            background-color: var(--surface);
             font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
         }
+        .prose tr:nth-child(even) {
+            background-color: var(--bg);
+        }
+        .light-theme .prose tr:nth-child(even) {
+            background-color: #f6f8fa;
+        }
+
         .prose code {
             background: var(--border-color);
             padding: 0.2em 0.4em;
@@ -623,6 +708,29 @@
             padding-left: 1em;
             margin-left: 0;
             color: var(--text-secondary);
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 0.5rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .copy-btn:hover {
+            background: var(--bg);
+            color: var(--accent);
         }
 
         /* * ==============================================
@@ -643,11 +751,23 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 7px rgba(59, 130, 246, 0); }
+        }
 
         @media (max-width: 768px) {
             .preferences-grid { grid-template-columns: 1fr; }
-            .container { padding: 1rem; }
-            .header h1 { font-size: 2.5rem; }
+            .container { padding: 0 1rem 1rem 1rem; }
+            .header h1 { font-size: 2rem; }
+            .preferences-panel { margin-top: 1rem; }
             .message-content { max-width: 90%; }
             .chat-area { padding: 1rem; max-height: calc(100vh - 360px); }
             .input-panel { padding: 1rem; }
@@ -661,7 +781,6 @@
                 <span>🌿</span>
                 AgriBot
             </h1>
-            <p>Your intelligent agricultural companion for crop management and disease detection</p>
             <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
                 <span>☀️</span>
             </button>
@@ -737,6 +856,7 @@
         <div class="chat-container">
             <div class="chat-area" id="chat-area">
                 <div class="welcome-message">
+                    <div class="welcome-icon">🤖</div>
                     <h3>Welcome to AgriBot!</h3>
                     <p>I'm here to help you with:</p>
                     <div class="quick-actions">
@@ -764,8 +884,19 @@
                             <span>📎</span>
                             <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
                         </label>
-                        <button class="icon-btn send-btn" id="send-btn" title="Send message" aria-label="Send message">
-                            <span>➡️</span>
+                        <button class="send-btn-new" id="send-btn" title="Send message" aria-label="Send message">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="36px" height="36px">
+                                <path fill="#e53935" d="M38.67,42H11.52C11.27,40.62,11,38.57,11,36c0-5,0-11,0-11s1.44-7.39,3.22-9.59 c1.67-2.06,2.76-3.48,6.78-4.41c3-0.7,7.13-0.23,9,1c2.15,1.42,3.37,6.67,3.81,11.29c1.49-0.3,5.21,0.2,5.5,1.28 C40.89,30.29,39.48,38.31,38.67,42z"></path>
+                                <path fill="#b71c1c" d="M39.02,42H11.99c-0.22-2.67-0.48-7.05-0.49-12.72c0.83,4.18,1.63,9.59,6.98,9.79 c3.48,0.12,8.27,0.55,9.83-2.45c1.57-3,3.72-8.95,3.51-15.62c-0.19-5.84-1.75-8.2-2.13-8.7c0.59,0.66,3.74,4.49,4.01,11.7 c0.03,0.83,0.06,1.72,0.08,2.66c4.21-0.15,5.93,1.5,6.07,2.35C40.68,33.85,39.8,38.9,39.02,42z"></path>
+                                <path fill="#212121" d="M35,27.17c0,3.67-0.28,11.2-0.42,14.83h-2C32.72,38.42,33,30.83,33,27.17 c0-5.54-1.46-12.65-3.55-14.02c-1.65-1.08-5.49-1.48-8.23-0.85c-3.62,0.83-4.57,1.99-6.14,3.92L15,16.32 c-1.31,1.6-2.59,6.92-3,8.96v10.8c0,2.58,0.28,4.61,0.54,5.92H10.5c-0.25-1.41-0.5-3.42-0.5-5.92l0.02-11.09 c0.15-0.77,1.55-7.63,3.43-9.94l0.08-0.09c1.65-2.03,2.96-3.63,7.25-4.61c3.28-0.76,7.67-0.25,9.77,1.13 C33.79,13.6,35,22.23,35,27.17z"></path>
+                                <path fill="white" d="M17.165,17.283c5.217-0.055,9.391,0.283,9,6.011c-0.391,5.728-8.478,5.533-9.391,5.337 c-0.913-0.196-7.826-0.043-7.696-5.337C9.209,18,13.645,17.32,17.165,17.283z"></path>
+                                <path fill="#212121" d="M40.739,37.38c-0.28,1.99-0.69,3.53-1.22,4.62h-2.43c0.25-0.19,1.13-1.11,1.67-4.9 c0.57-4-0.23-11.79-0.93-12.78c-0.4-0.4-2.63-0.8-4.37-0.89l0.1-1.99c1.04,0.05,4.53,0.31,5.71,1.49 C40.689,24.36,41.289,33.53,40.739,37.38z"></path>
+                                <path fill="white" d="M10.154,20.201c0.261,2.059-0.196,3.351,2.543,3.546s8.076,1.022,9.402-0.554 c1.326-1.576,1.75-4.365-0.891-5.267C19.336,17.287,12.959,16.251,10.154,20.201z"></path>
+                                <path fill="#212121" d="M17.615,29.677c-0.502,0-0.873-0.03-1.052-0.069c-0.086-0.019-0.236-0.035-0.434-0.06 c-5.344-0.679-8.053-2.784-8.052-6.255c0.001-2.698,1.17-7.238,8.986-7.32l0.181-0.002c3.444-0.038,6.414-0.068,8.272,1.818 c1.173,1.191,1.712,3,1.647,5.53c-0.044,1.688-0.785,3.147-2.144,4.217C22.785,29.296,19.388,29.677,17.615,29.677z M17.086,17.973 c-7.006,0.074-7.008,4.023-7.008,5.321c-0.001,3.109,3.598,3.926,6.305,4.27c0.273,0.035,0.48,0.063,0.601,0.089 c0.563,0.101,4.68,0.035,6.855-1.732c0.865-0.702,1.299-1.57,1.326-2.653c0.051-1.958-0.301-3.291-1.073-4.075 c-1.262-1.281-3.834-1.255-6.825-1.222L17.086,17.973z"></path>
+                                <path fill="#cccccc" d="M15.078,19.043c1.957-0.326,5.122-0.529,4.435,1.304c-0.489,1.304-7.185,2.185-7.185,0.652 C12.328,19.467,15.078,19.043,15.078,19.043z"></path>
+                              </svg>
+                              <span class="now">Now!</span>
+                              <span class="play">Send</span>
                         </button>
                     </div>
                 </div>
@@ -780,8 +911,9 @@
         let currentRegion = 'India';
         let currentLanguage = 'en';
         let lastRequestTime = 0;
-        const REQUEST_DELAY = 2000; // 2 seconds
-        let abortController; // To allow cancelling fetch requests
+        const REQUEST_DELAY = 1000; // Reduced delay
+        let abortController;
+        let typewriterInterval;
 
         const chatArea = document.getElementById('chat-area');
         const messageInput = document.getElementById('message-input');
@@ -805,75 +937,82 @@
             });
 
             const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
-            if (savedPrefs.region) {
-                regionSelect.value = savedPrefs.region;
-                currentRegion = savedPrefs.region;
-            }
-            if (savedPrefs.language) {
-                languageSelect.value = savedPrefs.language;
-                currentLanguage = savedPrefs.language;
-            }
-
-            messageInput.addEventListener('input', autoResize);
+            if (savedPrefs.region) regionSelect.value = savedPrefs.region;
+            if (savedPrefs.language) languageSelect.value = savedPrefs.language;
             
+            currentRegion = regionSelect.value;
+            currentLanguage = languageSelect.value;
+
+            messageInput.addEventListener('input', () => {
+                autoResize();
+                if (messageInput.value.trim().length > 0) {
+                    sendBtn.classList.add('pulsing');
+                } else {
+                    sendBtn.classList.remove('pulsing');
+                }
+            });
             messageInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    if (!isProcessing) {
-                        sendMessage();
-                    }
+                    if (!isProcessing) sendMessage();
                 }
             });
 
             imageInput.addEventListener('change', handleImageUpload);
-            
             themeToggle.addEventListener('click', toggleTheme);
-
             setPreferences(true);
         });
 
         function autoResize() {
             messageInput.style.height = 'auto';
-            const scrollHeight = messageInput.scrollHeight;
-            messageInput.style.height = scrollHeight + 'px';
+            messageInput.style.height = messageInput.scrollHeight + 'px';
         }
 
         function toggleTheme() {
             isLightTheme = !isLightTheme;
             document.body.classList.toggle('light-theme', isLightTheme);
             themeToggle.innerHTML = isLightTheme ? '<span>🌙</span>' : '<span>☀️</span>';
-            themeToggle.setAttribute('aria-label', isLightTheme ? 'Switch to dark theme' : 'Switch to light theme');
+        }
+        
+        function typewriterEffect(element, text, onComplete) {
+            let i = 0;
+            element.innerHTML = ""; // Clear previous content
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+            cursor.textContent = '█';
+            element.appendChild(cursor);
+
+            clearInterval(typewriterInterval);
+            typewriterInterval = setInterval(() => {
+                if (i < text.length) {
+                    cursor.before(text.charAt(i));
+                    i++;
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                } else {
+                    clearInterval(typewriterInterval);
+                    cursor.remove();
+                    if (onComplete) onComplete();
+                }
+            }, 20);
         }
 
         async function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
                 img.src = URL.createObjectURL(file);
                 img.onload = () => {
-                    const maxWidth = 400;
-                    const maxHeight = 300;
-                    let width = img.width;
-                    let height = img.height;
+                    const maxWidth = 400, maxHeight = 300;
+                    let { width, height } = img;
                     if (width > height) {
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        }
+                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
                     } else {
-                        if (height > maxHeight) {
-                            width = Math.round((width * maxHeight) / height);
-                            height = maxHeight;
-                        }
+                        if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
                     }
                     canvas.width = width;
                     canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    canvas.toBlob(blob => {
-                        resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
-                        URL.revokeObjectURL(img.src);
-                    }, 'image/jpeg', 0.85);
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(blob => resolve(new File([blob], file.name, { type: 'image/jpeg', quality: 0.85 })), 'image/jpeg');
                 };
                 img.onerror = () => reject(new Error(`Invalid image: ${file.name}`));
             });
@@ -883,59 +1022,16 @@
             progressBar.classList.remove('hidden');
             progress.style.width = `${percent}%`;
             progressText.textContent = text;
-            if (percent >= 100) setTimeout(() => {
-                progressBar.classList.add('hidden');
-                progressText.textContent = '';
-            }, 500);
+            if (percent >= 100) setTimeout(() => progressBar.classList.add('hidden'), 500);
         }
 
         async function setPreferences(isInitial = false) {
-            const now = Date.now();
-            if (!isInitial && now - lastRequestTime < REQUEST_DELAY) {
-                addMessage('error', `Please wait ${Math.ceil((REQUEST_DELAY - (now - lastRequestTime)) / 1000)} seconds before setting preferences again.`);
-                return;
-            }
-            lastRequestTime = now;
-
-            const region = regionSelect.value;
-            const language = languageSelect.value;
-            
-            currentRegion = region;
-            currentLanguage = language;
-            
-            const formData = new FormData();
-            formData.append('region', region);
-            formData.append('language', language);
-            
-            try {
-                if (!isInitial) updateProgress(10, 'Setting preferences...');
-                const res = await fetchWithRetry('/set_prefs', { method: 'POST', body: formData }, 3, 2000);
-                if (!isInitial) updateProgress(50);
-                
-                if (!res.ok) {
-                    const errorMsg = await res.json();
-                    let message = `Error setting preferences: ${errorMsg.error || 'Unknown error'}.`;
-                    throw new Error(message);
-                }
-                
-                const data = await res.json();
-                if (!isInitial) updateProgress(100);
-                
-                if (data.status === 'success') {
-                    localStorage.setItem('userPrefs', JSON.stringify({ region, language }));
-                    if (!isInitial) {
-                        const regionName = regionSelect.options[regionSelect.selectedIndex].text;
-                        addMessage('user', `Preferences updated: Region - ${regionName}, Language - ${getLanguageName(language)}`);
-                        addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${regionName} in ${getLanguageName(language)}.`);
-                    }
-                } else if (!isInitial) {
-                    addMessage('error', `Error: ${data.error}`);
-                }
-            } catch (error) {
-                if (!isInitial) {
-                    updateProgress(100);
-                    addMessage('error', error.message);
-                }
+            currentRegion = regionSelect.value;
+            currentLanguage = languageSelect.value;
+            localStorage.setItem('userPrefs', JSON.stringify({ region: currentRegion, language: currentLanguage }));
+            if (!isInitial) {
+                addMessage('user', `Preferences updated to Region: ${currentRegion}, Language: ${getLanguageName(currentLanguage)}`);
+                addMessage('bot', `Great! I've updated your preferences.`);
             }
         }
 
@@ -946,58 +1042,43 @@
 
         async function handleImageUpload(e) {
             const files = Array.from(e.target.files);
-            
             if (files.length > 3) {
                 addMessage('error', 'Please upload a maximum of 3 images.');
-                imageInput.value = '';
-                imagePreview.innerHTML = '';
                 return;
             }
-            
             uploadedImages = [];
             imagePreview.innerHTML = '';
             updateProgress(10, 'Processing images...');
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const previewId = `preview-${Date.now()}-${i}`;
-                if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-                    updateProgress(10 + (i * 80 / files.length), `Processing image ${i + 1} of ${files.length}...`);
-                    try {
-                        const compressed = await compressImage(file);
-                        uploadedImages.push({file: compressed, id: previewId});
-                        
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const previewItem = document.createElement('div');
-                            previewItem.className = 'preview-item';
-                            previewItem.id = previewId;
-                            previewItem.innerHTML = `
-                                <img src="${e.target.result}" alt="Preview of uploaded image ${i + 1}">
-                                <button class="remove-btn" onclick="removeImage('${previewId}')" aria-label="Remove image ${i + 1}">&times;</button>
-                            `;
-                            imagePreview.appendChild(previewItem);
-                        };
-                        reader.readAsDataURL(file);
-                        updateProgress(10 + ((i + 1) * 80 / files.length), `Processed image ${i + 1} of ${files.length}`);
-                    } catch (error) {
-                        addMessage('error', `Invalid image: ${file.name}. Please upload a valid PNG or JPG.`);
-                    }
-                } else {
-                    addMessage('error', `Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
+            const processingPromises = files.map(async (file, i) => {
+                if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+                    addMessage('error', `Invalid file type: ${file.name}.`);
+                    return;
                 }
-            }
+                try {
+                    const compressed = await compressImage(file);
+                    const previewId = `preview-${Date.now()}-${i}`;
+                    uploadedImages.push({ file: compressed, id: previewId });
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        previewItem.id = previewId;
+                        previewItem.innerHTML = `<img src="${e.target.result}" alt="Preview"><button class="remove-btn" onclick="removeImage('${previewId}')">&times;</button>`;
+                        imagePreview.appendChild(previewItem);
+                    };
+                    reader.readAsDataURL(file);
+                } catch (error) {
+                    addMessage('error', `Could not process image: ${file.name}.`);
+                }
+            });
+            await Promise.all(processingPromises);
             updateProgress(100);
         }
 
         function removeImage(previewId) {
             uploadedImages = uploadedImages.filter(img => img.id !== previewId);
-            const previewElement = document.getElementById(previewId);
-            if(previewElement) previewElement.remove();
-            
-            if (uploadedImages.length === 0) {
-                imageInput.value = '';
-            }
+            document.getElementById(previewId)?.remove();
+            if (uploadedImages.length === 0) imageInput.value = '';
         }
 
         function sendQuickMessage(message) {
@@ -1006,157 +1087,155 @@
         }
 
         function setSendButtonState(state) {
+            const playSpan = sendBtn.querySelector('.play');
+            const nowSpan = sendBtn.querySelector('.now');
+            const svg = sendBtn.querySelector('svg');
+
             if (state === 'sending') {
                 isProcessing = true;
-                sendBtn.disabled = false; // Keep it enabled to click stop
+                sendBtn.disabled = false;
                 sendBtn.classList.add('stop-btn');
-                sendBtn.innerHTML = '<span>⏹️</span>';
+                sendBtn.classList.remove('pulsing');
+                if(playSpan) playSpan.textContent = 'Stop';
+                if(nowSpan) nowSpan.style.display = 'none';
+                if(svg) svg.style.display = 'none';
                 sendBtn.title = 'Stop Generating';
-            } else { // 'idle' state
+            } else {
                 isProcessing = false;
                 sendBtn.disabled = false;
                 sendBtn.classList.remove('stop-btn');
-                sendBtn.innerHTML = '<span>➡️</span>';
+                if(playSpan) playSpan.textContent = 'Send';
+                if(nowSpan) nowSpan.style.display = 'inline';
+                if(svg) svg.style.display = 'block';
                 sendBtn.title = 'Send message';
             }
         }
         
         function stopGeneration() {
-            if (abortController) {
-                abortController.abort();
+            if (abortController) abortController.abort();
+            clearInterval(typewriterInterval);
+            setSendButtonState('idle'); 
+            const lastBotMessage = document.querySelector('.message.bot:last-child .message-content');
+            if (lastBotMessage && !lastBotMessage.querySelector('.message-time')) {
+                 lastBotMessage.innerHTML = `<p>Generation stopped.</p>`;
             }
         }
 
         async function sendMessage() {
+            if (isProcessing) return;
             const now = Date.now();
             if (now - lastRequestTime < REQUEST_DELAY) {
-                addMessage('error', `Please wait ${Math.ceil((REQUEST_DELAY - (now - lastRequestTime)) / 1000)} seconds before sending another message.`);
+                addMessage('error', `Please wait a moment before sending another message.`);
                 return;
             }
             lastRequestTime = now;
 
             const message = messageInput.value.trim();
             const hasImages = uploadedImages.length > 0;
-            
-            if (!message && !hasImages) {
-                messageInput.focus();
-                return;
-            }
-            
+            if (!message && !hasImages) return;
+
             setSendButtonState('sending');
             abortController = new AbortController();
             
-            const welcomeMessage = document.querySelector('.welcome-message');
-            if (welcomeMessage) welcomeMessage.remove();
-            
+            document.querySelector('.welcome-message')?.remove();
             if (message) addMessage('user', message);
-            if (hasImages) addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
+            if (hasImages) addMessage('user', `Uploaded ${uploadedImages.length} image(s) for analysis.`);
             
-            const loadingId = addMessage('bot', '', true);
-            
+            const botMessageDiv = addMessage('bot', '', true);
+            const messageContentElement = botMessageDiv.querySelector('.message-content');
+
             const formData = new FormData();
             if (message) formData.append('query', message);
             uploadedImages.forEach(img => formData.append('image', img.file));
             
             try {
                 const endpoint = hasImages ? '/upload' : '/chat';
-                updateProgress(10, hasImages ? 'Analyzing images...' : 'Processing query...');
                 const res = await fetchWithRetry(endpoint, {
                     method: 'POST',
                     body: formData,
                     signal: abortController.signal
-                }, 3, 2000);
-                updateProgress(50);
+                }, 3, 1000);
                 
                 if (!res.ok) {
                     const errorMsg = await res.json();
-                    let errorMessage = `Error: ${errorMsg.error || 'Unknown error'}.`;
-                    if (res.status >= 400) {
-                         errorMessage = `${errorMsg.error}. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
-                    }
-                    throw new Error(errorMessage);
+                    throw new Error(errorMsg.error || 'An unknown error occurred.');
                 }
                 
                 const data = await res.json();
-                updateProgress(100);
+                const responseText = hasImages ? data.remedy : data.response;
                 
-                if (data.error) {
-                    addMessage('error', data.error);
-                } else if (hasImages) {
-                    const scientificName = data.scientific_name === 'Unknown' ? 'Not identified' : data.scientific_name;
-                    const response = `
-                        <div class="prose">
-                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">Plant Analysis Results</h4>
-                            <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border:1px solid var(--border-color)">
-                                <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
-                                <p><strong>Scientific Name:</strong> ${scientificName}</p>
-                                <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
-                            </div>
-                            <h4 style="color: var(--warning); margin-bottom: 0.5rem;">Recommended Treatment</h4>
-                            <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; border:1px solid var(--border-color)">
-                                ${marked.parse(data.remedy)}
-                            </div>
-                        </div>
-                    `;
-                    addMessage('bot', response);
-                } else {
-                    addMessage('bot', `<div class="prose">${marked.parse(data.response)}</div>`);
-                }
+                const cleanTextForTyping = responseText.replace(/[`*#_~[\]()<>|]/g, '');
+
+                typewriterEffect(messageContentElement, cleanTextForTyping, () => {
+                    messageContentElement.innerHTML = marked.parse(responseText);
+                    const time = document.createElement('div');
+                    time.className = 'message-time';
+                    time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.innerHTML = '<span>📋</span>';
+                    copyBtn.title = 'Copy to clipboard';
+                    copyBtn.onclick = () => copyToClipboard(responseText, copyBtn);
+                    
+                    messageContentElement.appendChild(time);
+                    messageContentElement.appendChild(copyBtn);
+                    setSendButtonState('idle');
+                });
+
             } catch (error) {
+                clearInterval(typewriterInterval);
                 if (error.name === 'AbortError') {
-                    addMessage('error', 'Generation stopped by user.');
-                    console.log('Fetch aborted by user.');
+                    messageContentElement.innerHTML = '<p>Generation stopped by user.</p>';
                 } else {
-                    addMessage('error', error.message);
+                    messageContentElement.innerHTML = `<p>Error: ${error.message}</p>`;
                 }
+                setSendButtonState('idle');
             } finally {
-                removeMessage(loadingId);
-                updateProgress(100);
                 messageInput.value = '';
-                messageInput.style.height = 'auto';
+                autoResize();
                 uploadedImages = [];
                 imagePreview.innerHTML = '';
                 imageInput.value = '';
-                setSendButtonState('idle');
             }
+        }
+        
+        function copyToClipboard(text, buttonElement) {
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = text;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            try {
+                document.execCommand('copy');
+                buttonElement.innerHTML = '<span>✅</span>';
+                setTimeout(() => {
+                    buttonElement.innerHTML = '<span>📋</span>';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+            document.body.removeChild(tempTextArea);
         }
 
         async function fetchWithRetry(url, options, retries, backoff) {
             for (let i = 0; i < retries; i++) {
                 try {
-                    const response = await fetch(url, options);
-                    if (response.status === 429 && i < retries - 1) {
-                        const retryAfter = parseInt(response.headers.get('Retry-After') || backoff / 1000);
-                        updateProgress(50, `Rate limit reached, retrying in ${retryAfter} seconds...`);
-                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-                        backoff *= 2;
-                        continue;
-                    }
-                    return response;
+                    return await fetch(url, options);
                 } catch (error) {
-                    if (i < retries - 1) {
-                        updateProgress(50, `Request failed, retrying in ${backoff / 1000} seconds...`);
-                        await new Promise(resolve => setTimeout(resolve, backoff));
-                        backoff *= 2;
-                    } else {
-                        throw error;
-                    }
+                    if (i === retries - 1 || error.name === 'AbortError') throw error;
+                    await new Promise(resolve => setTimeout(resolve, backoff * (i + 1)));
                 }
             }
         }
 
         function addMessage(type, content, isLoading = false) {
-            const messageId = Date.now();
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${type}`;
-            messageDiv.id = `message-${messageId}`;
             
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
-            
             const icons = { user: '👤', bot: '🤖', error: '⚠️' };
             avatar.innerHTML = `<span>${icons[type] || ''}</span>`;
-            avatar.setAttribute('aria-label', `${type} message`);
             
             const messageContent = document.createElement('div');
             messageContent.className = 'message-content';
@@ -1175,13 +1254,7 @@
             messageDiv.appendChild(messageContent);
             chatArea.appendChild(messageDiv);
             chatArea.scrollTop = chatArea.scrollHeight;
-            
-            return messageId;
-        }
-
-        function removeMessage(messageId) {
-            const message = document.getElementById(`message-${messageId}`);
-            if (message) message.remove();
+            return messageDiv;
         }
     </script>
 </body>
