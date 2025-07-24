@@ -1,74 +1,32 @@
-# AgriBot Enhanced
+AgriBot: Your Smart Agricultural AssistantAgriBot is an intelligent, web-based agricultural assistant designed to help farmers and gardeners in India. It provides expert advice on crop management, identifies plant diseases through image analysis, and offers localized, actionable remedies. The interface supports multiple Indian languages, making it accessible to a diverse user base.✨ Features🤖 Intelligent Chat: Ask questions in natural language about crop selection, weather, fertilizers, and farming techniques.📸 Plant Disease Detection: Upload up to three images of a plant, and AgriBot will identify the plant and diagnose any potential diseases.🌍 Region-Specific Advice: Get agricultural advice tailored to your specific state or region in India.🗣️ Multi-Language Support: Interact with AgriBot in English or one of several Indian languages, including Hindi, Tamil, Bengali, and more.⚡ Real-time Responses: The chat interface provides streaming responses, making the interaction feel fast and responsive.🌗 Light & Dark Mode: A sleek, modern interface with toggleable light and dark themes for user comfort.📱 Fully Responsive: The user interface is designed to work seamlessly on desktops, tablets, and mobile devices.🛑 Stoppable Responses: Users can stop the AI from generating a response mid-stream.🛠️ Tech StackFrontendHTML5 & CSS3: For the core structure and styling of the application.Tailwind CSS: A utility-first CSS framework for rapid UI development.Vanilla JavaScript: For all client-side logic, including API calls, DOM manipulation, and handling user interactions.Marked.js: A library to parse and render Markdown responses from the AI.BackendPython 3: The primary language for the server-side logic.Flask: A lightweight web framework for building the backend API.OpenRouter AI: Powers the natural language understanding and text generation using the high-speed google/gemini-flash-1.5 model.Plant.id API: Used for accurate plant identification and health assessment from user-uploaded images.Pillow (PIL): For image processing and optimization on the backend.🚀 Setup and InstallationFollow these steps to get a local copy of AgriBot up and running.1. PrerequisitesPython 3.8 or higherpip (Python package installer)2. Clone the Repositorygit clone [https://github.com/your-username/agribot.git](https://github.com/your-username/agribot.git)
+cd agribot
+3. Create a Virtual EnvironmentIt's highly recommended to use a virtual environment to manage project dependencies.# For Windows
+python -m venv venv
+venv\Scripts\activate
 
-A Flask-based AI-powered agricultural assistant for Indian farmers, integrating multiple plant identification APIs, region-specific advice, and a responsive frontend.
+# For macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
+4. Install DependenciesCreate a requirements.txt file with the following content:Flask
+python-dotenv
+requests
+Pillow
+markdown
+bleach
+Then, install the packages:pip install -r requirements.txt
+5. Set Up Environment VariablesCreate a file named .env in the root of your project directory. This file will store your secret API keys.# Get your key from [https://openrouter.ai/](https://openrouter.ai/)
+OPENROUTER_API_KEY="your_openrouter_api_key"
 
-## Setup Instructions
+# Get your key from [https://plant.id/](https://plant.id/)
+PLANT_ID_API_KEY="your_plant_id_api_key"
 
-1. **Prerequisites**:
-   - Python 3.9+
-   - Redis (`sudo apt-get install redis-server` or Windows equivalent)
-   - SQLite (included with Python)
-
-2. **Install Dependencies**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # or venv\Scripts\activate on Windows
-   pip install -r backend/requirements.txt
-   ```
-
-3. **Configure Environment**:
-   - Copy `backend/.env` template and fill in API keys:
-     ```
-     SECRET_KEY=$(python -c "import os; print(os.urandom(24).hex())")
-     DATABASE_URL=sqlite:///agribot.db
-     REDIS_URL=redis://localhost:6379/0
-     PLANT_ID_KEY=your_plant_id_key_here
-     PLANTNET_KEY=your_plantnet_key_here
-     PERENUAL_KEY=your_perenual_key_here
-     OPENAI_API_KEY=your_openai_api_key_here
-     ```
-
-4. **Initialize Database**:
-   ```bash
-   flask db init
-   flask db migrate
-   flask db upgrade
-   ```
-
-5. **Run Application**:
-   ```bash
-   python backend/app.py
-   ```
-   Access at `http://localhost:5000`.
-
-6. **Production Deployment**:
-   ```bash
-   gunicorn --bind 0.0.0.0:5000 --workers 4 --worker-class gevent --worker-connections 1000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 100 --log-level info --access-logfile - --error-logfile - backend.app:app
-   ```
-
-7. **Docker Deployment**:
-   ```bash
-   docker build -t agribot .
-   docker run -p 5000:5000 --env-file backend/.env agribot
-   ```
-
-## Testing
-- **Image Upload**: Upload a plant image to test disease/species identification.
-- **Chat**: Query "best crops for Punjab" to verify region-specific advice.
-- **API Status**: Check status indicators in the UI.
-- **Logs**: Review `backend/logs/app.log` for structured logs.
-- **Endpoints**:
-  - `POST /api/upload-image`: Upload image
-  - `POST /api/identify-plant`: Plant health analysis
-  - `POST /api/identify-species`: Species identification
-  - `POST /api/plant-info`: Plant details
-  - `POST /api/chat`: AI chat
-  - `POST /api/local-analysis`: Local fallback
-  - `GET /api/check-status`: API status
-  - `GET /health`: System health
-
-## Troubleshooting
-- **OpenAI Error**: Ensure `openai==1.10.0` and valid `OPENAI_API_KEY`.
-- **Redis**: Verify Redis is running (`redis-cli ping` should return `PONG`).
-- **Database**: Run `flask db upgrade` if schema errors occur.
-- **Logs**: Check `backend/logs/app.log` for detailed errors.
+# Optional: Change the default AI model
+# OPENROUTER_MODEL="anthropic/claude-3-haiku"
+6. Run the ApplicationStart the Flask development server:python app.py
+Open your web browser and navigate to http://127.0.0.1:5000 to see AgriBot in action.usage How to Use AgriBotSet Your Preferences: Use the dropdown menus to select your region (state) in India and your preferred language.Ask a Question: Type any agricultural question into the chat input at the bottom and press Enter or click the send button.Upload an Image: Click the paperclip icon to select up to three images of a plant you want to analyze. The bot will automatically identify the plant and check for diseases.Stop a Response: If a response is taking too long or you want to ask something else, click the red "Stop" button that appears while the bot is "typing".📂 Project Structure.
+├── .env              # Stores API keys and environment variables
+├── app.py            # The main Flask backend server
+├── index.html        # The single-page frontend for the application
+├── requirements.txt  # Python package dependencies
+└── README.md         # This file
+💡 Future ImprovementsUser Accounts & History: Implement user authentication to save conversation history.Database Integration: Store user preferences and chat history in a database like SQLite or PostgreSQL.Expanded Knowledge Base: Integrate more agricultural
