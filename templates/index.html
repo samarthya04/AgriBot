@@ -4,66 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriBot - Your Smart Agricultural Assistant</title>
-    <link rel="icon" href="data:;base64,=" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* * ==============================================
+         * FONT & ROOT VARIABLES
+         * ==============================================
+         */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --dark-bg: #0f172a;
-            --dark-surface: #1e293b;
-            --dark-hover: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
+            --primary-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --secondary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --user-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            
+            /* Dark Theme */
+            --bg-dark: #0d1117;
+            --surface-dark: #161b22;
+            --border-dark: #30363d;
+            --text-primary-dark: #c9d1d9;
+            --text-secondary-dark: #8b949e;
+
+            /* Light Theme */
+            --bg-light: #f6f8fa;
+            --surface-light: #ffffff;
+            --border-light: #d0d7de;
+            --text-primary-light: #1f2328;
+            --text-secondary-light: #57606a;
+
             --accent: #3b82f6;
-            --success: #10b981;
+            --success: #2ea043;
             --warning: #f59e0b;
             --error: #ef4444;
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.3);
+            --shadow-light: 0 4px 15px -5px rgba(0, 0, 0, 0.1);
         }
 
+        /* * ==============================================
+         * THEME SETUP
+         * ==============================================
+         */
+        body {
+            --bg: var(--bg-dark);
+            --surface: var(--surface-dark);
+            --border-color: var(--border-dark);
+            --text-primary: var(--text-primary-dark);
+            --text-secondary: var(--text-secondary-dark);
+            --shadow-color: var(--shadow);
+            background-color: var(--bg);
+            color: var(--text-primary);
+        }
+
+        body.light-theme {
+            --bg: var(--bg-light);
+            --surface: var(--surface-light);
+            --border-color: var(--border-light);
+            --text-primary: var(--text-primary-light);
+            --text-secondary: var(--text-secondary-light);
+            --shadow-color: var(--shadow-light);
+        }
+
+        /* * ==============================================
+         * GENERAL STYLES & LAYOUT
+         * ==============================================
+         */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+                        radial-gradient(circle at 75% 75%, rgba(67, 233, 123, 0.1) 0%, transparent 40%);
+            animation: rotate 20s linear infinite;
             pointer-events: none;
             z-index: -1;
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            width: 100%;
             padding: 2rem 1rem;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
 
+        /* Desktop layout: centered, 75% width */
+        @media (min-width: 1024px) {
+            .container {
+                width: 75%;
+                max-width: 1100px;
+                margin: 0 auto;
+            }
+        }
+
+
+        /* * ==============================================
+         * HEADER & THEME TOGGLE
+         * ==============================================
+         */
         .header {
             text-align: center;
             margin-bottom: 2rem;
@@ -71,7 +122,7 @@
         }
 
         .header h1 {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 800;
             background: var(--primary-gradient);
             -webkit-background-clip: text;
@@ -81,45 +132,54 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
+        }
+        
+        .header h1 span {
+             -webkit-text-fill-color: initial; /* Allow emoji color */
         }
 
         .header p {
             color: var(--text-secondary);
             font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .theme-toggle {
             position: absolute;
             top: 0;
             right: 0;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+            background: var(--surface);
+            border: 1px solid var(--border-color);
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
             font-size: 1.5rem;
         }
 
         .theme-toggle:hover {
-            background: var(--glass-border);
-            transform: scale(1.1);
+            border-color: var(--accent);
+            transform: scale(1.1) rotate(15deg);
         }
 
+        /* * ==============================================
+         * PREFERENCES PANEL
+         * ==============================================
+         */
         .preferences-panel {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+            background: var(--surface);
+            border: 1px solid var(--border-color);
             border-radius: 1rem;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-color);
+            transition: all 0.3s ease;
         }
 
         .preferences-grid {
@@ -142,19 +202,32 @@
         }
 
         .input-field {
-            background: var(--dark-surface);
-            border: 1px solid var(--glass-border);
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
             border-radius: 0.5rem;
             padding: 0.75rem;
             color: var(--text-primary);
             font-size: 1rem;
             transition: all 0.3s ease;
+            width: 100%;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238b949e%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 0.65em auto;
+            padding-right: 2.5rem;
+        }
+        
+        .light-theme .input-field {
+             background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2357606a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
         }
 
         .input-field:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
 
         .btn {
@@ -164,77 +237,71 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
             text-decoration: none;
             font-size: 1rem;
+            color: white;
         }
 
         .btn-primary {
-            background: var(--primary-gradient);
-            color: white;
+            background: var(--accent);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 10px 20px -10px var(--accent);
         }
 
-        .btn-retry {
-            background: var(--warning);
-            color: white;
-        }
-
-        .btn-retry:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
-        }
-
+        /* * ==============================================
+         * CHAT CONTAINER & AREA
+         * ==============================================
+         */
         .chat-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+            background: var(--surface);
+            border: 1px solid var(--border-color);
             border-radius: 1rem;
             overflow: hidden;
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-color);
+            transition: all 0.3s ease;
         }
 
         .chat-area {
             flex: 1;
             padding: 1.5rem;
             overflow-y: auto;
-            max-height: 500px;
+            max-height: calc(100vh - 420px); /* Adjust based on other elements */
+            min-height: 300px;
             scroll-behavior: smooth;
         }
 
-        .chat-area::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .chat-area::-webkit-scrollbar-track {
-            background: var(--dark-surface);
-        }
-
+        .chat-area::-webkit-scrollbar { width: 8px; }
+        .chat-area::-webkit-scrollbar-track { background: transparent; }
         .chat-area::-webkit-scrollbar-thumb {
-            background: var(--accent);
-            border-radius: 3px;
+            background-color: var(--border-color);
+            border-radius: 4px;
+            border: 2px solid var(--surface);
         }
+        .chat-area::-webkit-scrollbar-thumb:hover { background-color: var(--accent); }
 
+        /* * ==============================================
+         * MESSAGES
+         * ==============================================
+         */
         .message {
             margin-bottom: 1.5rem;
             display: flex;
             align-items: flex-start;
             gap: 0.75rem;
-            animation: fadeInUp 0.3s ease;
+            animation: fadeInUp 0.4s ease-out;
         }
 
-        .message.user {
-            flex-direction: row-reverse;
-        }
+        .message.user { flex-direction: row-reverse; }
 
         .message-avatar {
             width: 40px;
@@ -244,37 +311,31 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            font-size: 2rem;
+            font-size: 1.5rem;
         }
 
-        .message.user .message-avatar {
-            background: var(--secondary-gradient);
-        }
-
-        .message.bot .message-avatar {
-            background: var(--success-gradient);
-        }
-
-        .message.error .message-avatar {
-            background: var(--error);
-        }
+        .message.user .message-avatar { background: var(--user-gradient); }
+        .message.bot .message-avatar { background: var(--primary-gradient); }
+        .message.error .message-avatar { background: var(--error); }
 
         .message-content {
-            max-width: 70%;
+            max-width: 75%;
             padding: 1rem 1.25rem;
             border-radius: 1rem;
             position: relative;
+            word-wrap: break-word;
         }
 
         .message.user .message-content {
-            background: var(--primary-gradient);
+            background: var(--accent);
             color: white;
             border-bottom-right-radius: 0.25rem;
         }
 
         .message.bot .message-content {
-            background: var(--dark-surface);
+            background: var(--bg);
             color: var(--text-primary);
+            border: 1px solid var(--border-color);
             border-bottom-left-radius: 0.25rem;
         }
 
@@ -283,33 +344,50 @@
             color: white;
             border-bottom-left-radius: 0.25rem;
         }
+        
+        .message-content .btn-retry {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.5);
+            margin-top: 0.5rem;
+        }
+        .message-content .btn-retry:hover {
+             background: rgba(255,255,255,0.3);
+        }
 
         .message-time {
             font-size: 0.75rem;
             color: var(--text-secondary);
-            margin-top: 0.25rem;
+            margin-top: 0.5rem;
+            text-align: right;
         }
+        .message.bot .message-time { color: var(--text-secondary); }
+        .message.user .message-time { color: rgba(255, 255, 255, 0.7); }
 
+        /* * ==============================================
+         * INPUT PANEL
+         * ==============================================
+         */
         .input-panel {
-            padding: 1.5rem;
-            background: var(--dark-surface);
-            border-top: 1px solid var(--glass-border);
+            padding: 1rem 1.5rem;
+            background: var(--surface);
+            border-top: 1px solid var(--border-color);
         }
 
         .input-container {
             display: flex;
             align-items: flex-end;
             gap: 1rem;
-            background: var(--dark-bg);
-            border: 1px solid var(--glass-border);
+            background: var(--bg);
+            border: 1px solid var(--border-color);
             border-radius: 1rem;
-            padding: 0.75rem;
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
             transition: all 0.3s ease;
         }
 
         .input-container:focus-within {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
 
         .message-input {
@@ -320,28 +398,21 @@
             font-size: 1rem;
             line-height: 1.5;
             resize: none;
-            min-height: 20px;
+            min-height: 24px; /* Matches line-height */
             max-height: 120px;
             overflow-y: auto;
+            padding: 0.25rem 0; /* Vertical alignment */
         }
 
-        .message-input:focus {
-            outline: none;
-        }
+        .message-input:focus { outline: none; }
+        .message-input::placeholder { color: var(--text-secondary); }
 
-        .message-input::placeholder {
-            color: var(--text-secondary);
-        }
+        .input-actions { display: flex; gap: 0.5rem; }
 
-        .input-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .upload-btn {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 0.5rem;
+        .icon-btn {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
             width: 40px;
             height: 40px;
             display: flex;
@@ -350,13 +421,12 @@
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
         }
 
-        .upload-btn:hover {
-            background: var(--glass-border);
-            transform: scale(1.1);
+        .icon-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .upload-btn input {
@@ -368,17 +438,9 @@
         }
 
         .send-btn {
-            background: var(--primary-gradient);
+            background: var(--accent);
+            color: white;
             border: none;
-            border-radius: 0.5rem;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.5rem;
         }
 
         .send-btn:hover:not(:disabled) {
@@ -388,12 +450,17 @@
         .send-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            background: var(--border-color);
         }
 
+        /* * ==============================================
+         * IMAGE PREVIEW & WELCOME MESSAGE
+         * ==============================================
+         */
         .image-preview {
             display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
             flex-wrap: wrap;
         }
 
@@ -401,25 +468,19 @@
             position: relative;
             border-radius: 0.5rem;
             overflow: hidden;
-            max-width: 100px;
-            max-height: 100px;
+            width: 80px;
+            height: 80px;
+            border: 2px solid var(--border-color);
         }
 
-        .preview-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .preview-item.invalid {
-            border: 2px solid var(--error);
-        }
+        .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-item.invalid { border-color: var(--error); }
 
         .preview-item .remove-btn {
             position: absolute;
             top: 4px;
             right: 4px;
-            background: var(--error);
+            background: rgba(0, 0, 0, 0.6);
             color: white;
             border: none;
             border-radius: 50%;
@@ -429,9 +490,60 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            line-height: 1;
+            transition: all 0.2s ease;
+        }
+        .preview-item .remove-btn:hover { background: var(--error); transform: scale(1.1); }
+
+        .welcome-message {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
         }
 
+        .welcome-message h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .quick-action {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .quick-action:hover {
+            background: var(--bg);
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        /* * ==============================================
+         * LOADING & PROGRESS
+         * ==============================================
+         */
         .loading {
             display: flex;
             align-items: center;
@@ -444,180 +556,109 @@
         .loading-spinner {
             width: 20px;
             height: 20px;
-            border: 2px solid var(--glass-border);
+            border: 2px solid var(--border-color);
             border-top: 2px solid var(--accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
-        .welcome-message {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-        }
-
-        .welcome-message h3 {
-            color: var(--text-primary);
+        
+        #progress-bar {
+            padding: 0 1.5rem;
             margin-bottom: 1rem;
         }
 
-        .quick-actions {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 1rem;
+        /* * ==============================================
+         * MARKDOWN PROSE STYLES
+         * ==============================================
+         */
+        .prose { max-width: 100%; overflow-x: auto; }
+        .prose h1, .prose h2, .prose h3, .prose h4 {
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            font-weight: 700;
+            line-height: 1.3;
         }
-
-        .quick-action {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+        .prose h1 { font-size: 1.5em; }
+        .prose h2 { font-size: 1.25em; }
+        .prose h3 { font-size: 1.1em; }
+        .prose p { margin-bottom: 0.75em; line-height: 1.6; }
+        .prose ul, .prose ol { list-style-position: outside; padding-left: 1.5em; margin-bottom: 1em; }
+        .prose li { margin-bottom: 0.5em; }
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5em 0;
+            border: 1px solid var(--border-color);
             border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
+            overflow: hidden;
+        }
+        .prose th, .prose td {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+        .prose th {
+            background-color: var(--bg);
+            font-weight: 600;
+        }
+        .prose code {
+            background: var(--border-color);
+            padding: 0.2em 0.4em;
+            border-radius: 0.25rem;
+            font-size: 85%;
+        }
+        .prose a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .prose a:hover {
+            text-decoration: underline;
+        }
+        .prose blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 1em;
+            margin-left: 0;
+            color: var(--text-secondary);
         }
 
-        .quick-action:hover {
-            background: var(--glass-border);
-            transform: translateY(-2px);
-        }
-
-        .light-theme {
-            --dark-bg: #f8fafc;
-            --dark-surface: #ffffff;
-            --dark-hover: #f1f5f9;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --glass-border: rgba(0, 0, 0, 0.1);
-        }
-
-        .light-theme body::before {
-            background: 
-                radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
-        }
-
+        /* * ==============================================
+         * ANIMATIONS & RESPONSIVENESS
+         * ==============================================
+         */
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
         @media (max-width: 768px) {
-            .preferences-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .container {
-                padding: 1rem;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .message-content {
-                max-width: 85%;
-            }
-        }
-
-        .prose {
-            max-width: 100%;
-            overflow-x: auto;
-        }
-
-        .prose h1 {
-            font-size: 1.5em;
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-        }
-
-        .prose h2, .prose h3, .prose h4 {
-            font-size: 1.25em;
-            margin-top: 0.75em;
-            margin-bottom: 0.5em;
-        }
-
-        .prose p {
-            margin-bottom: 0.5em;
-        }
-
-        .prose ul {
-            list-style-type: disc;
-            padding-left: 1.5em;
-            margin-bottom: 0.5em;
-        }
-
-        .prose li {
-            margin-bottom: 0.25em;
-        }
-
-        .prose table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1em;
-            margin-bottom: 1em;
-            border: 1px solid var(--glass-border);
-            border-radius: 0.5rem;
-            overflow: hidden; /* Ensures border-radius is respected by children */
-        }
-
-        .prose th, .prose td {
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--glass-border);
-            text-align: left;
-        }
-
-        .prose th {
-            background-color: var(--dark-hover);
-            font-weight: 600;
-        }
-
-        .prose tr:nth-child(even) {
-            background-color: var(--dark-surface);
-        }
-
-        .prose tr:nth-child(odd) {
-            background-color: var(--dark-hover);
-        }
-
-        /* Light theme adjustments for table header */
-        .light-theme .prose th {
-            background-color: #f1f5f9; /* A light gray for the header in light mode */
-        }
-
-        .light-theme .prose tr:nth-child(even) {
-            background-color: #ffffff;
-        }
-
-        .light-theme .prose tr:nth-child(odd) {
-            background-color: #f8fafc;
-        }
-
-        .light-theme .prose h1, .light-theme .prose h2, .light-theme .prose h3, .light-theme .prose h4, .light-theme .prose p, .light-theme .prose li {
-            color: var(--text-primary);
+            .preferences-grid { grid-template-columns: 1fr; }
+            .container { padding: 1rem; }
+            .header h1 { font-size: 2.5rem; }
+            .message-content { max-width: 90%; }
+            .chat-area { padding: 1rem; max-height: calc(100vh - 360px); }
+            .input-panel { padding: 1rem; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>AgriBot</h1>
+            <h1>
+                <span>🌿</span>
+                AgriBot
+            </h1>
             <p>Your intelligent agricultural companion for crop management and disease detection</p>
-            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme to light with sun emoji">
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
                 <span>☀️</span>
             </button>
         </div>
@@ -626,7 +667,45 @@
             <div class="preferences-grid">
                 <div class="input-group">
                     <label for="region">Region</label>
-                    <input type="text" id="region" class="input-field" placeholder="e.g., Punjab, India" value="India" aria-label="Enter your region">
+                    <select id="region" class="input-field" aria-label="Select your region">
+                        <option value="India">India (General)</option>
+                        <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                        <option value="Assam">Assam</option>
+                        <option value="Bihar">Bihar</option>
+                        <option value="Chandigarh">Chandigarh</option>
+                        <option value="Chhattisgarh">Chhattisgarh</option>
+                        <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra & Nagar Haveli and Daman & Diu</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Goa">Goa</option>
+                        <option value="Gujarat">Gujarat</option>
+                        <option value="Haryana">Haryana</option>
+                        <option value="Himachal Pradesh">Himachal Pradesh</option>
+                        <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                        <option value="Jharkhand">Jharkhand</option>
+                        <option value="Karnataka">Karnataka</option>
+                        <option value="Kerala">Kerala</option>
+                        <option value="Ladakh">Ladakh</option>
+                        <option value="Lakshadweep">Lakshadweep</option>
+                        <option value="Madhya Pradesh">Madhya Pradesh</option>
+                        <option value="Maharashtra">Maharashtra</option>
+                        <option value="Manipur">Manipur</option>
+                        <option value="Meghalaya">Meghalaya</option>
+                        <option value="Mizoram">Mizoram</option>
+                        <option value="Nagaland">Nagaland</option>
+                        <option value="Odisha">Odisha</option>
+                        <option value="Puducherry">Puducherry</option>
+                        <option value="Punjab">Punjab</option>
+                        <option value="Rajasthan">Rajasthan</option>
+                        <option value="Sikkim">Sikkim</option>
+                        <option value="Tamil Nadu">Tamil Nadu</option>
+                        <option value="Telangana">Telangana</option>
+                        <option value="Tripura">Tripura</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                        <option value="Uttarakhand">Uttarakhand</option>
+                        <option value="West Bengal">West Bengal</option>
+                    </select>
                 </div>
                 
                 <div class="input-group">
@@ -644,8 +723,9 @@
                     </select>
                 </div>
                 
-                <button class="btn btn-primary" onclick="setPreferences()" aria-label="Set preferences with checkmark emoji">
-                    <span>✅</span> Set Preferences
+                <button class="btn btn-primary" onclick="setPreferences()" aria-label="Set preferences">
+                    <span>✅</span>
+                    Set Preferences
                 </button>
             </div>
         </div>
@@ -656,12 +736,12 @@
                     <h3>Welcome to AgriBot!</h3>
                     <p>I'm here to help you with:</p>
                     <div class="quick-actions">
-                        <button class="quick-action" onclick="sendQuickMessage('What crops are suitable for my region?')" aria-label="Crop recommendations">Crop Recommendations</button>
-                        <button class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')" aria-label="Weather information">Weather Info</button>
-                        <button class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')" aria-label="Disease prevention">Disease Prevention</button>
-                        <button class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')" aria-label="Fertilizer guide">Fertilizer Guide</button>
+                        <button class="quick-action" onclick="sendQuickMessage('What crops are suitable for my region?')">Crop Recommendations</button>
+                        <button class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')">Weather Info</button>
+                        <button class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')">Disease Prevention</button>
+                        <button class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')">Fertilizer Guide</button>
                     </div>
-                    <p style="margin-top: 1rem; font-size: 0.9rem;">You can also upload plant images for disease detection!</p>
+                    <p style="margin-top: 1.5rem; font-size: 0.9rem;">You can also upload plant images for disease detection!</p>
                 </div>
                 <div id="progress-bar" class="mt-4 hidden">
                     <div class="w-full bg-gray-200 rounded-full h-2.5">
@@ -674,13 +754,13 @@
             <div class="input-panel">
                 <div class="image-preview" id="image-preview"></div>
                 <div class="input-container">
-                    <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases, or farming techniques..." rows="1" aria-label="Enter your message or question"></textarea>
+                    <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases..." rows="1" aria-label="Enter your message or question"></textarea>
                     <div class="input-actions">
-                        <label class="upload-btn" title="Upload plant images" aria-label="Upload plant images with upload emoji">
-                            <span>📤</span>
+                        <label class="icon-btn upload-btn" title="Upload plant images" aria-label="Upload plant images">
+                            <span>📎</span>
                             <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
                         </label>
-                        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send message" aria-label="Send message with arrow emoji">
+                        <button class="icon-btn send-btn" id="send-btn" onclick="sendMessage()" title="Send message" aria-label="Send message">
                             <span>➡️</span>
                         </button>
                     </div>
@@ -690,6 +770,8 @@
     </div>
 
     <script>
+        // --- All JavaScript logic is preserved and updated for the new dropdown ---
+        
         let isLightTheme = false;
         let uploadedImages = [];
         let isProcessing = false;
@@ -703,7 +785,7 @@
         const imageInput = document.getElementById('image-input');
         const imagePreview = document.getElementById('image-preview');
         const sendBtn = document.getElementById('send-btn');
-        const regionInput = document.getElementById('region');
+        const regionSelect = document.getElementById('region'); // Changed from regionInput
         const languageSelect = document.getElementById('language');
         const themeToggle = document.getElementById('theme-toggle');
         const progressBar = document.getElementById('progress-bar');
@@ -713,7 +795,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
             if (savedPrefs.region) {
-                regionInput.value = savedPrefs.region;
+                regionSelect.value = savedPrefs.region;
                 currentRegion = savedPrefs.region;
             }
             if (savedPrefs.language) {
@@ -734,23 +816,22 @@
             
             themeToggle.addEventListener('click', toggleTheme);
 
-            setPreferences();
+            setPreferences(true); // Set preferences on load silently
         });
 
         function autoResize() {
             messageInput.style.height = 'auto';
-            messageInput.style.height = messageInput.scrollHeight + 'px';
+            const scrollHeight = messageInput.scrollHeight;
+            messageInput.style.height = scrollHeight + 'px';
         }
 
         function toggleTheme() {
             isLightTheme = !isLightTheme;
             document.body.classList.toggle('light-theme', isLightTheme);
-            themeToggle.innerHTML = isLightTheme 
-                ? '<span>🌙</span>'
-                : '<span>☀️</span>';
+            themeToggle.innerHTML = isLightTheme ? '<span>🌙</span>' : '<span>☀️</span>';
             themeToggle.setAttribute('aria-label', isLightTheme 
-                ? 'Switch to dark theme with moon emoji' 
-                : 'Switch to light theme with sun emoji');
+                ? 'Switch to dark theme' 
+                : 'Switch to light theme');
         }
 
         async function compressImage(file) {
@@ -799,15 +880,15 @@
             }, 500);
         }
 
-        async function setPreferences() {
+        async function setPreferences(isInitial = false) {
             const now = Date.now();
-            if (now - lastRequestTime < REQUEST_DELAY) {
+            if (!isInitial && now - lastRequestTime < REQUEST_DELAY) {
                 addMessage('error', `Please wait ${Math.ceil((REQUEST_DELAY - (now - lastRequestTime)) / 1000)} seconds before setting preferences again.`);
                 return;
             }
             lastRequestTime = now;
 
-            const region = regionInput.value.trim() || 'India';
+            const region = regionSelect.value;
             const language = languageSelect.value;
             
             currentRegion = region;
@@ -818,12 +899,12 @@
             formData.append('language', language);
             
             try {
-                updateProgress(10, 'Setting preferences...');
+                if (!isInitial) updateProgress(10, 'Setting preferences...');
                 const res = await fetchWithRetry('/set_prefs', {
                     method: 'POST',
                     body: formData
                 }, 3, 2000);
-                updateProgress(50);
+                if (!isInitial) updateProgress(50);
                 
                 if (!res.ok) {
                     const errorMsg = await res.json();
@@ -836,37 +917,32 @@
                 }
                 
                 const data = await res.json();
-                updateProgress(100);
+                if (!isInitial) updateProgress(100);
                 
                 if (data.status === 'success') {
                     localStorage.setItem('userPrefs', JSON.stringify({
                         region: region,
                         language: language
                     }));
-                    addMessage('user', `Preferences updated: Region - ${region}, Language - ${getLanguageName(language)}`);
-                    addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${region} in ${getLanguageName(language)}.`);
-                } else {
+                    if (!isInitial) {
+                        const regionName = regionSelect.options[regionSelect.selectedIndex].text;
+                        addMessage('user', `Preferences updated: Region - ${regionName}, Language - ${getLanguageName(language)}`);
+                        addMessage('bot', `Great! I've updated your preferences. I'll provide information relevant to ${regionName} in ${getLanguageName(language)}.`);
+                    }
+                } else if (!isInitial) {
                     addMessage('error', `Error: ${data.error}`);
                 }
             } catch (error) {
-                updateProgress(100);
-                addMessage('error', error.message);
+                if (!isInitial) {
+                    updateProgress(100);
+                    addMessage('error', error.message);
+                }
             }
         }
 
         function getLanguageName(code) {
-            const languages = {
-                'en': 'English',
-                'hi': 'Hindi',
-                'ta': 'Tamil',
-                'bn': 'Bengali',
-                'te': 'Telugu',
-                'gu': 'Gujarati',
-                'mr': 'Marathi',
-                'pa': 'Punjabi',
-                'or': 'Odia'
-            };
-            return languages[code] || 'English';
+            const option = languageSelect.querySelector(`option[value="${code}"]`);
+            return option ? option.textContent : 'English';
         }
 
         async function handleImageUpload(e) {
@@ -885,18 +961,21 @@
             
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
+                const previewId = `preview-${Date.now()}-${i}`;
                 if (['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
                     updateProgress(10 + (i * 80 / files.length), `Processing image ${i + 1} of ${files.length}...`);
                     try {
                         const compressed = await compressImage(file);
-                        uploadedImages.push(compressed);
+                        const fileIndex = uploadedImages.push({file: compressed, id: previewId}) - 1;
+                        
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             const previewItem = document.createElement('div');
                             previewItem.className = 'preview-item';
+                            previewItem.id = previewId;
                             previewItem.innerHTML = `
                                 <img src="${e.target.result}" alt="Preview of uploaded image ${i + 1}">
-                                <button class="remove-btn" onclick="removeImage(${i})" aria-label="Remove image ${i + 1}">×</button>
+                                <button class="remove-btn" onclick="removeImage('${previewId}')" aria-label="Remove image ${i + 1}">&times;</button>
                             `;
                             imagePreview.appendChild(previewItem);
                         };
@@ -904,31 +983,19 @@
                         updateProgress(10 + ((i + 1) * 80 / files.length), `Processed image ${i + 1} of ${files.length}`);
                     } catch (error) {
                         addMessage('error', `Invalid image: ${file.name}. Please upload a valid PNG or JPG.`);
-                        const previewItem = document.createElement('div');
-                        previewItem.className = 'preview-item invalid';
-                        previewItem.innerHTML = `
-                            <img src="" alt="Invalid image ${file.name}">
-                            <button class="remove-btn" onclick="removeImage(${i})" aria-label="Remove invalid image ${i + 1}">×</button>
-                        `;
-                        imagePreview.appendChild(previewItem);
                     }
                 } else {
                     addMessage('error', `Invalid file type for ${file.name}. Please upload PNG, JPG, or JPEG.`);
-                    const previewItem = document.createElement('div');
-                    previewItem.className = 'preview-item invalid';
-                    previewItem.innerHTML = `
-                        <img src="" alt="Invalid image ${file.name}">
-                        <button class="remove-btn" onclick="removeImage(${i})" aria-label="Remove invalid image ${i + 1}">×</button>
-                    `;
-                    imagePreview.appendChild(previewItem);
                 }
             }
             updateProgress(100);
         }
 
-        function removeImage(index) {
-            uploadedImages.splice(index, 1);
-            imagePreview.children[index].remove();
+        function removeImage(previewId) {
+            uploadedImages = uploadedImages.filter(img => img.id !== previewId);
+            const previewElement = document.getElementById(previewId);
+            if(previewElement) previewElement.remove();
+            
             if (uploadedImages.length === 0) {
                 imageInput.value = '';
             }
@@ -980,8 +1047,7 @@
                 formData.append('query', message);
             }
             for (let i = 0; i < uploadedImages.length; i++) {
-                formData.append('image', uploadedImages[i]);
-                updateProgress(10 + (i + 1) * (80 / uploadedImages.length), `Uploading image ${i + 1} of ${uploadedImages.length}...`);
+                formData.append('image', uploadedImages[i].file);
             }
             
             try {
@@ -998,27 +1064,13 @@
                 if (!res.ok) {
                     const errorMsg = await res.json();
                     const retryAfter = res.headers.get('Retry-After');
-                    let message = `Error: ${errorMsg.error || 'Unknown error'}.`;
+                    let errorMessage = `Error: ${errorMsg.error || 'Unknown error'}.`;
                     if (res.status === 429 && retryAfter) {
-                        message += ` Please try again in ${retryAfter} seconds.`;
-                    } else if (res.status === 400) {
-                        if (message.includes('Invalid file type') || message.includes('Invalid image data')) {
-                            message = `${errorMsg.error} Please upload a valid PNG or JPG image. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
-                        } else if (message.includes('does not appear to be a plant')) {
-                            message = `${errorMsg.error} Please upload an image of a plant. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
-                        } else {
-                            message = `${errorMsg.error} Please check your input and try again. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
-                        }
-                    } else if (res.status === 500) {
-                        if (message.includes('Unable to validate Plant.id API key')) {
-                            message = `Unable to validate API key. Please try again or contact support. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
-                        } else if (message.includes('timed out')) {
-                            message = `Plant.id API timed out. Please try again. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
-                        } else {
-                            message = `Server error: ${errorMsg.error}. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
-                        }
+                        errorMessage += ` Please try again in ${retryAfter} seconds.`;
+                    } else if (res.status >= 400) {
+                         errorMessage = `${errorMsg.error}. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
                     }
-                    throw new Error(message);
+                    throw new Error(errorMessage);
                 }
                 
                 const data = await res.json();
@@ -1031,13 +1083,13 @@
                     const response = `
                         <div class="prose">
                             <h4 style="color: var(--success); margin-bottom: 0.5rem;">Plant Analysis Results</h4>
-                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                            <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border:1px solid var(--border-color)">
                                 <p><strong>Plant:</strong> ${data.plant} (Confidence: ${data.plant_confidence})</p>
                                 <p><strong>Scientific Name:</strong> ${scientificName}</p>
                                 <p><strong>Detected Issue:</strong> ${data.disease} (Confidence: ${data.disease_confidence})</p>
                             </div>
                             <h4 style="color: var(--warning); margin-bottom: 0.5rem;">Recommended Treatment</h4>
-                            <div style="background: var(--glass-bg); padding: 1rem; border-radius: 0.5rem;">
+                            <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; border:1px solid var(--border-color)">
                                 ${marked.parse(data.remedy)}
                             </div>
                         </div>
@@ -1091,16 +1143,13 @@
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
             
-            if (type === 'user') {
-                avatar.innerHTML = '<span>👤</span>';
-                avatar.setAttribute('aria-label', 'User message with person emoji');
-            } else if (type === 'bot') {
-                avatar.innerHTML = '<span>🤖</span>';
-                avatar.setAttribute('aria-label', 'Bot message with robot emoji');
-            } else if (type === 'error') {
-                avatar.innerHTML = '<span>⚠️</span>';
-                avatar.setAttribute('aria-label', 'Error message with warning emoji');
-            }
+            const icons = {
+                user: '👤',
+                bot: '🤖',
+                error: '⚠️'
+            };
+            avatar.innerHTML = `<span>${icons[type] || ''}</span>`;
+            avatar.setAttribute('aria-label', `${type} message`);
             
             const messageContent = document.createElement('div');
             messageContent.className = 'message-content';
@@ -1117,7 +1166,7 @@
                 
                 const time = document.createElement('div');
                 time.className = 'message-time';
-                time.textContent = new Date().toLocaleTimeString();
+                time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 messageContent.appendChild(time);
             }
             
