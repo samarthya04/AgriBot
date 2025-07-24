@@ -18,6 +18,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # --- Flask App Initialization ---
+# Correctly point to the templates folder relative to the api folder
 app = Flask(__name__, template_folder="../templates")
 app.config['UPLOAD_FOLDER'] = '/tmp/Uploads'
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB Limit
@@ -25,22 +26,20 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # --- API Keys & Configuration ---
 PLANT_ID_API_KEY = os.getenv("PLANT_ID_API_KEY")
-PERENUAL_API_KEY = os.getenv("PERENUAL_API_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324:free")
+# --- MODEL UPDATE: Switched to a more stable and faster model to avoid 500 errors ---
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "moonshotai/kimi-k2:free") 
 
 # --- In-memory Caching and User Preferences ---
 user_prefs = {"region": None, "language": "en"}
-remedy_cache = {}
-identification_cache = {}
 
 # --- Security Configuration for HTML Sanitization ---
 ALLOWED_TAGS = [
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 
     'strong', 'em', 'br', 'div', 'span', 'hr',
-    'table', 'thead', 'tbody', 'tr', 'th', 'td'
+    'table', 'thead', 'tbody', 'tr', 'th', 'td', 'b', 'i'
 ]
-ALLOWED_ATTRIBUTES = {'a': ['href'], 'img': ['src', 'alt']}
+ALLOWED_ATTRIBUTES = {'*': ['style', 'class']}
 
 
 # --- LLM Client for AI-powered Text Generation ---
@@ -71,7 +70,7 @@ class LLMClient:
             "temperature": temperature
         }
 
-        for attempt in range(5):
+        for attempt in range(4): # Total of 4 attempts
             try:
                 response = requests.post(
                     "https://openrouter.ai/api/v1/chat/completions",
@@ -80,7 +79,8 @@ class LLMClient:
                     timeout=20
                 )
                 if response.status_code == 429:
-                    wait_time = (2 ** attempt) + 1
+                    # --- ENHANCEMENT: Exponential backoff ---
+                    wait_time = (2 ** attempt) + 1 # Waits for 1, 3, 7 seconds
                     logging.warning(f"OpenRouter rate limit hit, retrying in {wait_time} seconds.")
                     time.sleep(wait_time)
                     continue
@@ -97,15 +97,15 @@ class LLMClient:
                 return {"content": data['choices'][0]['message']['content'].strip(), "model": selected_model}
 
             except requests.exceptions.Timeout:
-                logging.error(f"OpenRouter API timeout, attempt {attempt + 1}/5.")
-                if attempt == 4:
+                logging.error(f"OpenRouter API timeout, attempt {attempt + 1}/4.")
+                if attempt == 3:
                     return {"error": "OpenRouter API timed out. Please try again later.", "model": "none"}
                 time.sleep((2 ** attempt) + 1)
             except requests.exceptions.RequestException as e:
                 logging.error(f"OpenRouter API query failed: {e}", exc_info=True)
                 return {"error": f"OpenRouter API query failed: {e}", "model": "none"}
         
-        return {"error": "Rate limit exceeded. Please try again later.", "model": "none"}
+        return {"error": "Rate limit exceeded after multiple retries. Please try again later.", "model": "none"}
 
 llm_client = LLMClient()
 
@@ -114,8 +114,6 @@ llm_client = LLMClient()
 
 def format_text_for_display(text):
     """Sanitizes and formats text for safe HTML display."""
-    # The AI can return either Markdown or raw HTML.
-    # We let bleach sanitize it to allow safe tags like tables.
     return bleach.clean(text, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
 
 def allowed_file(filename):
@@ -126,8 +124,7 @@ def process_image(file_storage):
     """Resizes, converts, and base64-encodes an image file."""
     try:
         img = Image.open(file_storage)
-        img.verify()  # Verify that it is, in fact, an image
-        # Re-open the file after verification
+        img.verify()
         file_storage.seek(0)
         img = Image.open(file_storage)
         img = img.convert('RGB')
@@ -177,27 +174,7 @@ def get_region_specific_remedy(plant_name, scientific_name, disease_name, region
     data = llm_client.query(messages, temperature=0.5)
     if 'error' in data or 'content' not in data:
         logging.error(f"Remedy generation failed: {data.get('error', 'Unknown error')}")
-        fallback = f"""
-## Treatment for {plant_name} with {disease_name} in {region or 'India'}
-
-### Organic Treatment
-- Remove and destroy infected plant parts. **Burn**, **bury deeply**, or **dispose** in garbage; do not compost.
-- Apply neem oil or a copper-based organic fungicide, following local agricultural guidelines.
-
-### Chemical Treatment
-- Use a fungicide suitable for {disease_name} on {plant_name}. Consult local agricultural extension services for specific recommendations.
-- **Follow label instructions** and safety precautions when applying chemicals.
-
-### Preventive Measures
-- Ensure proper spacing between plants to improve air circulation.
-- Avoid overhead watering to keep foliage dry.
-- Regularly inspect plants for early signs of disease.
-
-### Important Notes
-- **Monitor plant health** after treatment and reapply as needed.
-- Consider the environmental impact of chemical treatments.
-- For region-specific advice in {region or 'India'}, consult local agricultural extension services.
-"""
+        fallback = f"Could not generate a specific remedy. The general advice from Plant.ID is: {plant_id_remedy}"
         return translate_text(fallback, "en", language), 'none'
     return translate_text(data['content'], "en", language), data['model']
 
@@ -208,8 +185,7 @@ def get_region_specific_remedy(plant_name, scientific_name, disease_name, region
 def handle_error(error):
     """Global error handler for the Flask app."""
     logging.error(f"An unexpected server error occurred: {error}", exc_info=True)
-    response = make_response(jsonify({"error": "Internal server error. Please try again later."}), 500)
-    return response
+    return make_response(jsonify({"error": "Internal server error. Please try again later."}), 500)
 
 @app.route('/')
 def index():
@@ -243,7 +219,6 @@ def chat():
         return jsonify({"error": "Query cannot be empty."}), 400
 
     query_en = translate_text(query, user_prefs.get('language', 'en'), "en")
-    logging.info(f"Translated query to English: {query_en}")
     
     system_prompt = f"You are AgriBot, an AI assistant for Indian agriculture. Provide clear, concise, and actionable advice for {user_prefs.get('region') or 'India'} in English. Format your response using clean markdown or HTML for tables."
     messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": query_en}]
@@ -253,9 +228,8 @@ def chat():
         return jsonify({"error": data['error']}), 500
     
     response_text = translate_text(data['content'], "en", user_prefs.get('language', 'en'))
-    formatted_response = format_text_for_display(response_text)
     
-    return jsonify({"response": formatted_response, "model": data['model']})
+    return jsonify({"response": response_text, "model": data['model']})
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -276,7 +250,6 @@ def upload():
             return jsonify({"error": f"Failed to process image: {file.filename}."}), 400
         encoded_images.append(encoded)
 
-    # 1. Plant Identification
     id_payload = {"images": encoded_images, "similar_images": True}
     id_response = _call_plant_id_api("/identification", id_payload)
     if 'error' in id_response:
@@ -286,31 +259,25 @@ def upload():
     if not plant_name:
          return jsonify({"error": "Could not identify a plant in the image."}), 400
 
-    # 2. Health Assessment
     health_payload = {"images": encoded_images}
     health_response = _call_plant_id_api("/health_assessment", health_payload)
     if 'error' in health_response:
         return jsonify(health_response), 500
 
     is_healthy, disease_info = _parse_health_response(health_response)
-    disease_name = disease_info['name']
-    disease_confidence = disease_info['confidence']
-    disease_description = disease_info['description']
     
-    # 3. Generate Region-Specific Remedy
     remedy, selected_model = get_region_specific_remedy(
-        plant_name, scientific_name, disease_name, user_prefs['region'], 
-        user_prefs['language'], disease_info['remedy'], disease_description
+        plant_name, scientific_name, disease_info['name'], user_prefs['region'], 
+        user_prefs['language'], disease_info['remedy'], disease_info['description']
     )
     
-    # 4. Format and Return Final Response
     final_response = {
         "plant": translate_text(plant_name, "en", user_prefs['language']),
         "scientific_name": translate_text(scientific_name, "en", user_prefs['language']),
         "plant_confidence": f"{plant_confidence:.2%}",
-        "disease": translate_text(disease_name, "en", user_prefs['language']),
-        "disease_confidence": f"{disease_confidence:.2%}",
-        "remedy": format_text_for_display(remedy),
+        "disease": translate_text(disease_info['name'], "en", user_prefs['language']),
+        "disease_confidence": f"{disease_info['confidence']:.2%}",
+        "remedy": remedy,
         "model": selected_model
     }
     return jsonify(final_response)
@@ -330,9 +297,7 @@ def _call_plant_id_api(endpoint, payload):
             return response.json()
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429 and attempt < 2:
-                wait_time = (2 ** attempt) + 1
-                logging.warning(f"Plant.id rate limit hit. Retrying in {wait_time}s.")
-                time.sleep(wait_time)
+                time.sleep((2 ** attempt))
             else:
                 logging.error(f"Plant.id API request failed: {e}", exc_info=True)
                 return {"error": f"Plant.id API error: {e.response.text}"}
@@ -351,11 +316,11 @@ def _parse_identification_response(response_data):
         return None, None, 0.0
         
     top_suggestion = suggestions[0]
-    plant_name = top_suggestion.get('name', "Unknown plant")
-    scientific_name = top_suggestion.get('details', {}).get('scientific_name', 'Unknown')
-    plant_confidence = top_suggestion.get('probability', 0.0)
-    
-    return plant_name, scientific_name, plant_confidence
+    return (
+        top_suggestion.get('name', "Unknown plant"),
+        top_suggestion.get('details', {}).get('scientific_name', 'Unknown'),
+        top_suggestion.get('probability', 0.0)
+    )
 
 def _parse_health_response(response_data):
     """Parses the health assessment API response."""
@@ -374,13 +339,18 @@ def _parse_health_response(response_data):
         suggestions = result.get('disease', {}).get('suggestions', [])
         if suggestions:
             top_suggestion = suggestions[0]
-            disease_info["name"] = top_suggestion.get('name', "Unknown Issue")
-            disease_info["confidence"] = top_suggestion.get('probability', 0.0)
-            disease_info["description"] = top_suggestion.get('details', {}).get('description', 'No specific description available.')
+            disease_info.update({
+                "name": top_suggestion.get('name', "Unknown Issue"),
+                "confidence": top_suggestion.get('probability', 0.0),
+                "description": top_suggestion.get('details', {}).get('description', 'No specific description available.'),
+                "remedy": top_suggestion.get('details', {}).get('treatment', {}).get('chemical', ['No specific remedy found.'])[0]
+            })
         else:
-            disease_info["name"] = "Unknown Issue"
-            disease_info["confidence"] = 1.0 - is_healthy_data.get('probability', 0.0)
-            disease_info["description"] = "The plant seems unhealthy, but no specific disease was identified."
+            disease_info.update({
+                "name": "Unknown Issue",
+                "confidence": 1.0 - is_healthy_data.get('probability', 0.0),
+                "description": "The plant seems unhealthy, but no specific disease was identified."
+            })
 
     return is_healthy, disease_info
 
@@ -389,4 +359,3 @@ def _parse_health_response(response_data):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
