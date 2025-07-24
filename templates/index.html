@@ -442,6 +442,10 @@
             color: white;
             border: none;
         }
+        
+        .send-btn.stop-btn {
+            background: var(--error);
+        }
 
         .send-btn:hover:not(:disabled) {
             transform: scale(1.1);
@@ -760,7 +764,7 @@
                             <span>📎</span>
                             <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
                         </label>
-                        <button class="icon-btn send-btn" id="send-btn" onclick="sendMessage()" title="Send message" aria-label="Send message">
+                        <button class="icon-btn send-btn" id="send-btn" title="Send message" aria-label="Send message">
                             <span>➡️</span>
                         </button>
                     </div>
@@ -770,8 +774,6 @@
     </div>
 
     <script>
-        // --- All JavaScript logic is preserved and updated for the new dropdown ---
-        
         let isLightTheme = false;
         let uploadedImages = [];
         let isProcessing = false;
@@ -779,13 +781,14 @@
         let currentLanguage = 'en';
         let lastRequestTime = 0;
         const REQUEST_DELAY = 2000; // 2 seconds
+        let abortController; // To allow cancelling fetch requests
 
         const chatArea = document.getElementById('chat-area');
         const messageInput = document.getElementById('message-input');
         const imageInput = document.getElementById('image-input');
         const imagePreview = document.getElementById('image-preview');
         const sendBtn = document.getElementById('send-btn');
-        const regionSelect = document.getElementById('region'); // Changed from regionInput
+        const regionSelect = document.getElementById('region');
         const languageSelect = document.getElementById('language');
         const themeToggle = document.getElementById('theme-toggle');
         const progressBar = document.getElementById('progress-bar');
@@ -793,6 +796,14 @@
         const progressText = document.getElementById('progress-text');
 
         document.addEventListener('DOMContentLoaded', () => {
+            sendBtn.addEventListener('click', () => {
+                if (isProcessing) {
+                    stopGeneration();
+                } else {
+                    sendMessage();
+                }
+            });
+
             const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
             if (savedPrefs.region) {
                 regionSelect.value = savedPrefs.region;
@@ -808,7 +819,9 @@
             messageInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    sendMessage();
+                    if (!isProcessing) {
+                        sendMessage();
+                    }
                 }
             });
 
@@ -816,7 +829,7 @@
             
             themeToggle.addEventListener('click', toggleTheme);
 
-            setPreferences(true); // Set preferences on load silently
+            setPreferences(true);
         });
 
         function autoResize() {
@@ -829,9 +842,7 @@
             isLightTheme = !isLightTheme;
             document.body.classList.toggle('light-theme', isLightTheme);
             themeToggle.innerHTML = isLightTheme ? '<span>🌙</span>' : '<span>☀️</span>';
-            themeToggle.setAttribute('aria-label', isLightTheme 
-                ? 'Switch to dark theme' 
-                : 'Switch to light theme');
+            themeToggle.setAttribute('aria-label', isLightTheme ? 'Switch to dark theme' : 'Switch to light theme');
         }
 
         async function compressImage(file) {
@@ -864,9 +875,7 @@
                         URL.revokeObjectURL(img.src);
                     }, 'image/jpeg', 0.85);
                 };
-                img.onerror = () => {
-                    reject(new Error(`Invalid image: ${file.name}`));
-                };
+                img.onerror = () => reject(new Error(`Invalid image: ${file.name}`));
             });
         }
 
@@ -900,19 +909,12 @@
             
             try {
                 if (!isInitial) updateProgress(10, 'Setting preferences...');
-                const res = await fetchWithRetry('/set_prefs', {
-                    method: 'POST',
-                    body: formData
-                }, 3, 2000);
+                const res = await fetchWithRetry('/set_prefs', { method: 'POST', body: formData }, 3, 2000);
                 if (!isInitial) updateProgress(50);
                 
                 if (!res.ok) {
                     const errorMsg = await res.json();
-                    const retryAfter = res.headers.get('Retry-After');
                     let message = `Error setting preferences: ${errorMsg.error || 'Unknown error'}.`;
-                    if (res.status === 429 && retryAfter) {
-                        message += ` Please try again in ${retryAfter} seconds.`;
-                    }
                     throw new Error(message);
                 }
                 
@@ -920,10 +922,7 @@
                 if (!isInitial) updateProgress(100);
                 
                 if (data.status === 'success') {
-                    localStorage.setItem('userPrefs', JSON.stringify({
-                        region: region,
-                        language: language
-                    }));
+                    localStorage.setItem('userPrefs', JSON.stringify({ region, language }));
                     if (!isInitial) {
                         const regionName = regionSelect.options[regionSelect.selectedIndex].text;
                         addMessage('user', `Preferences updated: Region - ${regionName}, Language - ${getLanguageName(language)}`);
@@ -966,7 +965,7 @@
                     updateProgress(10 + (i * 80 / files.length), `Processing image ${i + 1} of ${files.length}...`);
                     try {
                         const compressed = await compressImage(file);
-                        const fileIndex = uploadedImages.push({file: compressed, id: previewId}) - 1;
+                        uploadedImages.push({file: compressed, id: previewId});
                         
                         const reader = new FileReader();
                         reader.onload = (e) => {
@@ -1006,6 +1005,28 @@
             sendMessage();
         }
 
+        function setSendButtonState(state) {
+            if (state === 'sending') {
+                isProcessing = true;
+                sendBtn.disabled = false; // Keep it enabled to click stop
+                sendBtn.classList.add('stop-btn');
+                sendBtn.innerHTML = '<span>⏹️</span>';
+                sendBtn.title = 'Stop Generating';
+            } else { // 'idle' state
+                isProcessing = false;
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('stop-btn');
+                sendBtn.innerHTML = '<span>➡️</span>';
+                sendBtn.title = 'Send message';
+            }
+        }
+        
+        function stopGeneration() {
+            if (abortController) {
+                abortController.abort();
+            }
+        }
+
         async function sendMessage() {
             const now = Date.now();
             if (now - lastRequestTime < REQUEST_DELAY) {
@@ -1014,8 +1035,6 @@
             }
             lastRequestTime = now;
 
-            if (isProcessing) return;
-            
             const message = messageInput.value.trim();
             const hasImages = uploadedImages.length > 0;
             
@@ -1024,50 +1043,35 @@
                 return;
             }
             
-            isProcessing = true;
-            sendBtn.disabled = true;
+            setSendButtonState('sending');
+            abortController = new AbortController();
             
             const welcomeMessage = document.querySelector('.welcome-message');
-            if (welcomeMessage) {
-                welcomeMessage.remove();
-            }
+            if (welcomeMessage) welcomeMessage.remove();
             
-            if (message) {
-                addMessage('user', message);
-            }
-            
-            if (hasImages) {
-                addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
-            }
+            if (message) addMessage('user', message);
+            if (hasImages) addMessage('user', `Uploaded ${uploadedImages.length} image${uploadedImages.length > 1 ? 's' : ''} for analysis`);
             
             const loadingId = addMessage('bot', '', true);
             
             const formData = new FormData();
-            if (message) {
-                formData.append('query', message);
-            }
-            for (let i = 0; i < uploadedImages.length; i++) {
-                formData.append('image', uploadedImages[i].file);
-            }
+            if (message) formData.append('query', message);
+            uploadedImages.forEach(img => formData.append('image', img.file));
             
             try {
                 const endpoint = hasImages ? '/upload' : '/chat';
                 updateProgress(10, hasImages ? 'Analyzing images...' : 'Processing query...');
                 const res = await fetchWithRetry(endpoint, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    signal: abortController.signal
                 }, 3, 2000);
                 updateProgress(50);
                 
-                removeMessage(loadingId);
-                
                 if (!res.ok) {
                     const errorMsg = await res.json();
-                    const retryAfter = res.headers.get('Retry-After');
                     let errorMessage = `Error: ${errorMsg.error || 'Unknown error'}.`;
-                    if (res.status === 429 && retryAfter) {
-                        errorMessage += ` Please try again in ${retryAfter} seconds.`;
-                    } else if (res.status >= 400) {
+                    if (res.status >= 400) {
                          errorMessage = `${errorMsg.error}. <button class="btn btn-retry" onclick="sendMessage()">Retry</button>`;
                     }
                     throw new Error(errorMessage);
@@ -1099,38 +1103,45 @@
                     addMessage('bot', `<div class="prose">${marked.parse(data.response)}</div>`);
                 }
             } catch (error) {
+                if (error.name === 'AbortError') {
+                    addMessage('error', 'Generation stopped by user.');
+                    console.log('Fetch aborted by user.');
+                } else {
+                    addMessage('error', error.message);
+                }
+            } finally {
                 removeMessage(loadingId);
                 updateProgress(100);
-                addMessage('error', error.message);
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                uploadedImages = [];
+                imagePreview.innerHTML = '';
+                imageInput.value = '';
+                setSendButtonState('idle');
             }
-            
-            messageInput.value = '';
-            messageInput.style.height = 'auto';
-            uploadedImages = [];
-            imagePreview.innerHTML = '';
-            imageInput.value = '';
-            isProcessing = false;
-            sendBtn.disabled = false;
-            messageInput.focus();
         }
 
         async function fetchWithRetry(url, options, retries, backoff) {
-            try {
-                const response = await fetch(url, options);
-                if (response.status === 429 && retries > 0) {
-                    const retryAfter = parseInt(response.headers.get('Retry-After') || backoff / 1000);
-                    updateProgress(50, `Rate limit reached, retrying in ${retryAfter} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 && i < retries - 1) {
+                        const retryAfter = parseInt(response.headers.get('Retry-After') || backoff / 1000);
+                        updateProgress(50, `Rate limit reached, retrying in ${retryAfter} seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                        backoff *= 2;
+                        continue;
+                    }
+                    return response;
+                } catch (error) {
+                    if (i < retries - 1) {
+                        updateProgress(50, `Request failed, retrying in ${backoff / 1000} seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, backoff));
+                        backoff *= 2;
+                    } else {
+                        throw error;
+                    }
                 }
-                return response;
-            } catch (error) {
-                if (retries > 0) {
-                    updateProgress(50, `Request failed, retrying in ${backoff / 1000} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, backoff));
-                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
-                }
-                throw error;
             }
         }
 
@@ -1143,11 +1154,7 @@
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
             
-            const icons = {
-                user: '👤',
-                bot: '🤖',
-                error: '⚠️'
-            };
+            const icons = { user: '👤', bot: '🤖', error: '⚠️' };
             avatar.innerHTML = `<span>${icons[type] || ''}</span>`;
             avatar.setAttribute('aria-label', `${type} message`);
             
@@ -1155,15 +1162,9 @@
             messageContent.className = 'message-content';
             
             if (isLoading) {
-                messageContent.innerHTML = `
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <span>Processing...</span>
-                    </div>
-                `;
+                messageContent.innerHTML = `<div class="loading"><div class="loading-spinner"></div><span>Processing...</span></div>`;
             } else {
                 messageContent.innerHTML = content;
-                
                 const time = document.createElement('div');
                 time.className = 'message-time';
                 time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1172,7 +1173,6 @@
             
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(messageContent);
-            
             chatArea.appendChild(messageDiv);
             chatArea.scrollTop = chatArea.scrollHeight;
             
@@ -1181,9 +1181,7 @@
 
         function removeMessage(messageId) {
             const message = document.getElementById(`message-${messageId}`);
-            if (message) {
-                message.remove();
-            }
+            if (message) message.remove();
         }
     </script>
 </body>
