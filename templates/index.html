@@ -1,1261 +1,1861 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriBot - Your Smart Agricultural Assistant</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AgriBot - India's ChatBot for Farmers</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>"
+    />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
     <style>
-        /* * ==============================================
-         * FONT & ROOT VARIABLES
-         * ==============================================
-         */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+      /* * ==============================================
+        * FONT & ROOT VARIABLES
+        * ==============================================
+        */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
 
-        :root {
-            --primary-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            --secondary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --user-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-            
-            /* Dark Theme */
-            --bg-dark: #0d1117;
-            --surface-dark: #161b22;
-            --border-dark: #30363d;
-            --text-primary-dark: #c9d1d9;
-            --text-secondary-dark: #8b949e;
+      :root {
+        --primary-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        --secondary-gradient: linear-gradient(
+          135deg,
+          #667eea 0%,
+          #764ba2 100%
+        );
+        --user-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
 
-            /* Light Theme */
-            --bg-light: #f6f8fa;
-            --surface-light: #ffffff;
-            --border-light: #d0d7de;
-            --text-primary-light: #1f2328;
-            --text-secondary-light: #57606a;
+        /* Dark Theme */
+        --bg-dark: #0d1117;
+        --surface-dark: #161b22;
+        --border-dark: #30363d;
+        --text-primary-dark: #c9d1d9;
+        --text-secondary-dark: #8b949e;
+        --surface-dark-rgb: 22, 27, 34; /* ADDED */
 
-            --accent: #3b82f6;
-            --success: #2ea043;
-            --warning: #f59e0b;
-            --error: #ef4444;
-            --shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.3);
-            --shadow-light: 0 4px 15px -5px rgba(0, 0, 0, 0.1);
-        }
+        /* Light Theme */
+        --bg-light: #f6f8fa;
+        --surface-light: #ffffff;
+        --border-light: #d0d7de;
+        --text-primary-light: #1f2328;
+        --text-secondary-light: #57606a;
+        --surface-light-rgb: 255, 255, 255; /* ADDED */
 
-        /* * ==============================================
-         * THEME SETUP
-         * ==============================================
-         */
-        body {
-            --bg: var(--bg-dark);
-            --surface: var(--surface-dark);
-            --border-color: var(--border-dark);
-            --text-primary: var(--text-primary-dark);
-            --text-secondary: var(--text-secondary-dark);
-            --shadow-color: var(--shadow);
-            background-color: var(--bg);
-            color: var(--text-primary);
-        }
+        --accent: #3b82f6;
+        --success: #2ea043;
+        --warning: #f59e0b;
+        --error: #ef4444;
+        --shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.3);
+        --shadow-light: 0 4px 15px -5px rgba(0, 0, 0, 0.1);
+      }
 
-        body.light-theme {
-            --bg: var(--bg-light);
-            --surface: var(--surface-light);
-            --border-color: var(--border-light);
-            --text-primary: var(--text-primary-light);
-            --text-secondary: var(--text-secondary-light);
-            --shadow-color: var(--shadow-light);
-        }
+      /* * ==============================================
+        * THEME SETUP
+        * ==============================================
+        */
+      body {
+        --bg: var(--bg-dark);
+        --surface: var(--surface-dark);
+        --surface-rgb: var(--surface-dark-rgb); /* ADDED */
+        --border-color: var(--border-dark);
+        --text-primary: var(--text-primary-dark);
+        --text-secondary: var(--text-secondary-dark);
+        --shadow-color: var(--shadow);
+        background-color: var(--bg);
+        color: var(--text-primary);
+      }
 
-        /* * ==============================================
-         * GENERAL STYLES & LAYOUT
-         * ==============================================
-         */
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
+      body.light-theme {
+        --bg: var(--bg-light);
+        --surface: var(--surface-light);
+        --surface-rgb: var(--surface-light-rgb); /* ADDED */
+        --border-color: var(--border-light);
+        --text-primary: var(--text-primary-light);
+        --text-secondary: var(--text-secondary-light);
+        --shadow-color: var(--shadow-light);
+      }
 
-        body::before {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            right: -50%;
-            bottom: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
-                        radial-gradient(circle at 75% 75%, rgba(67, 233, 123, 0.1) 0%, transparent 40%);
-            animation: rotate 20s linear infinite;
-            pointer-events: none;
-            z-index: -1;
-        }
+      /* * ==============================================
+        * GENERAL STYLES & LAYOUT
+        * ==============================================
+        */
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
 
+      body::before {
+        content: "";
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        right: -50%;
+        bottom: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+            circle at 25% 25%,
+            rgba(59, 130, 246, 0.1) 0%,
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 75% 75%,
+            rgba(67, 233, 123, 0.1) 0%,
+            transparent 40%
+          );
+        animation: rotate 20s linear infinite;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .container {
+        width: 100%;
+        padding: 0 1rem 2rem 1rem; /* Removed top padding */
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      /* Desktop layout: centered, 75% width */
+      @media (min-width: 1024px) {
         .container {
-            width: 100%;
-            padding: 0 1rem 2rem 1rem; /* Removed top padding */
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+          width: 75%;
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 0 2rem 0;
+        }
+      }
+
+      /* * ==============================================
+        * HEADER & THEME TOGGLE
+        * ==============================================
+        */
+      .header {
+        /* MODIFIED: Made header a flex container to position items */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0; /* MODIFIED: Removed margin to attach preferences panel */
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: rgba(var(--surface-rgb), 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        box-shadow: var(--shadow-light);
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+      }
+
+      body.light-theme .header {
+        background-color: rgba(246, 248, 250, 0.8);
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .header h1 span {
+        -webkit-text-fill-color: initial; /* Allow emoji color */
+      }
+
+      /* * ==============================================
+        * PREFERENCES PANEL
+        * ==============================================
+        */
+      .preferences-panel {
+        /* MODIFIED: Made panel sticky */
+        position: sticky;
+        top: 73px; /* Sticking point below the header (approx header height) */
+        z-index: 9;
+        background-color: rgba(var(--surface-rgb), 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+
+        border: 1px solid var(--border-color);
+        border-top: none; /* Remove top border as it connects to header */
+        border-radius: 0 0 1rem 1rem; /* Round bottom corners */
+        padding: 1.5rem;
+        margin-top: 0; /* MODIFIED: Removed top margin */
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-color);
+        transition: all 0.3s ease;
+      }
+
+      .preferences-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 1rem;
+        align-items: end;
+      }
+
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .input-group label {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+      }
+
+      .input-field {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-color: var(--bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        color: var(--text-primary);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238b949e%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 0.65em auto;
+        padding-right: 2.5rem;
+      }
+
+      .light-theme .input-field {
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2357606a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      }
+
+      .input-field:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        font-size: 1rem;
+        color: white;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -10px var(--accent);
+      }
+
+      /* * ==============================================
+        * CHAT CONTAINER & AREA
+        * ==============================================
+        */
+      .chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: var(--shadow-color);
+        transition: all 0.3s ease;
+      }
+
+      .chat-area {
+        flex: 1;
+        padding: 1.5rem;
+        overflow-y: auto;
+        max-height: calc(
+          100vh - 420px
+        ); /* Adjust based on other elements */
+        min-height: 300px;
+        scroll-behavior: smooth;
+      }
+
+      .chat-area::-webkit-scrollbar {
+        width: 8px;
+      }
+      .chat-area::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .chat-area::-webkit-scrollbar-thumb {
+        background-color: var(--border-color);
+        border-radius: 4px;
+        border: 2px solid var(--surface);
+      }
+      .chat-area::-webkit-scrollbar-thumb:hover {
+        background-color: var(--accent);
+      }
+
+      /* * ==============================================
+        * MESSAGES
+        * ==============================================
+        */
+      .message {
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        animation: fadeInUp 0.4s ease-out;
+      }
+
+      .message.user {
+        flex-direction: row-reverse;
+      }
+
+      .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.5rem;
+      }
+
+      .message.user .message-avatar {
+        background: var(--user-gradient);
+      }
+      .message.bot .message-avatar {
+        background: var(--primary-gradient);
+      }
+      .message.error .message-avatar {
+        background: var(--error);
+      }
+
+      .message-content {
+        max-width: 75%;
+        padding: 1rem 1.25rem;
+        border-radius: 1rem;
+        position: relative;
+        word-wrap: break-word;
+      }
+
+      .message.bot .message-content:hover .copy-btn {
+        opacity: 1;
+      }
+
+      .message.user .message-content {
+        background: var(--accent);
+        color: white;
+        border-bottom-right-radius: 0.25rem;
+      }
+
+      .message.bot .message-content {
+        background: var(--bg);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-bottom-left-radius: 0.25rem;
+      }
+
+      .message.error .message-content {
+        background: var(--error);
+        color: white;
+        border-bottom-left-radius: 0.25rem;
+      }
+
+      .message-content .btn-retry {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        margin-top: 0.5rem;
+      }
+      .message-content .btn-retry:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .message-time {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+        text-align: right;
+      }
+      .message.bot .message-time {
+        color: var(--text-secondary);
+      }
+      .message.user .message-time {
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      /* * ==============================================
+        * INPUT PANEL
+        * ==============================================
+        */
+      .input-panel {
+        padding: 1rem 1.5rem;
+        background: var(--surface);
+        border-top: 1px solid var(--border-color);
+      }
+
+      .input-container {
+        display: flex;
+        align-items: flex-end;
+        gap: 1rem;
+        background: var(--bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+        padding: 0.5rem 0.5rem 0.5rem 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .input-container:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      }
+
+      .message-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-size: 1rem;
+        line-height: 1.5;
+        resize: none;
+        min-height: 24px; /* Matches line-height */
+        max-height: 120px;
+        overflow-y: auto;
+        padding: 0.25rem 0; /* Vertical alignment */
+      }
+
+      .message-input:focus {
+        outline: none;
+      }
+      .message-input::placeholder {
+        color: var(--text-secondary);
+      }
+
+      .input-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .icon-btn {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        font-size: 1.25rem;
+      }
+
+      .icon-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .upload-btn input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+
+      /* From Uiverse.io by rishichawda */
+      /* The switch - the box around the slider */
+      #theme-toggle-button {
+        font-size: 12px;
+        position: relative;
+        display: inline-block;
+        width: 4.5em; /* MODIFIED: Made toggle smaller */
+        cursor: pointer;
+      }
+
+      /* Hide default HTML checkbox */
+      #toggle {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      #container,
+      #patches,
+      #stars,
+      #button,
+      #sun,
+      #moon,
+      #cloud {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 0.25s;
+      }
+
+      /* night sky background */
+      #toggle:checked + svg #container {
+        fill: #2b4360;
+      }
+
+      /* move button to right when checked */
+      #toggle:checked + svg #button {
+        transform: translate(28px, 2.333px);
+      }
+
+      /* show/hide sun and moon based on checkbox state */
+      #sun {
+        opacity: 1;
+      }
+
+      #toggle:checked + svg #sun {
+        opacity: 0;
+      }
+
+      #moon {
+        opacity: 0;
+      }
+
+      #toggle:checked + svg #moon {
+        opacity: 1;
+      }
+
+      /* show or hide background items on checkbox state */
+      #cloud {
+        opacity: 1;
+      }
+
+      #toggle:checked + svg #cloud {
+        opacity: 0;
+      }
+
+      #stars {
+        opacity: 0;
+      }
+
+      #toggle:checked + svg #stars {
+        opacity: 1;
+      }
+
+      /* From Uiverse.io by shadowfax29 */
+      /* The switch - the box around the slider */
+      .switch {
+        font-size: 15px;
+  position: relative;
+  display: inline-block;
+  width: 3.5em;
+  height: 2em;
+  --mud: #8B4513;
+      }
+
+      /* Hide default HTML checkbox */
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      /* The slider */
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to bottom, skyblue 70%, var(--mud));
+        transition: 0.4s;
+        border-radius: 30px;
+        border: 2px solid black;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 1.4em;
+        width: 1.4em;
+        border-radius: 20px;
+        left: 0.3em;
+        bottom: 0.3em;
+        transition: 0.4s;
+      }
+
+      .plant {
+        position: absolute;
+        bottom: 3px;
+        right: -30px;
+        z-index: 3;
+        opacity: 0;
+      }
+
+      .seed {
+        position: absolute;
+        content: "";
+        height: 1.4em;
+        width: 1.4em;
+        border-radius: 20px;
+        left: 0.3em;
+        bottom: 0.3em;
+        transition: 0.4s;
+      }
+
+      .switch input:checked + .slider {
+        background-color: #156829;
+      }
+
+      .switch input:focus + .slider {
+        box-shadow: 0 0 1px #156829;
+      }
+
+      .switch input:checked + .slider:before,
+      .switch input:checked + .slider .seed {
+        transform: translateX(1.5em);
+      }
+
+      .switch input:checked + .slider .seed {
+        opacity: 0;
+      }
+
+      .switch input:checked + .slider .plant {
+        animation: zoomIn 0.5s forwards;
+      }
+
+      @keyframes zoomIn {
+        0% {
+          transform: scale(0);
+          opacity: 0;
         }
 
-        /* Desktop layout: centered, 75% width */
-        @media (min-width: 1024px) {
-            .container {
-                width: 75%;
-                max-width: 1100px;
-                margin: 0 auto;
-                padding: 0 0 2rem 0;
-            }
+        100% {
+          transform: scale(1);
+          opacity: 1;
         }
+      }
 
+      .stop-btn-container .slider {
+        background: var(--error) !important;
+      }
 
-        /* * ==============================================
-         * HEADER & THEME TOGGLE
-         * ==============================================
-         */
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background-color: rgba(var(--surface-rgb), 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: var(--shadow-light);
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-        
-        body.light-theme .header {
-             background-color: rgba(246, 248, 250, 0.8);
-        }
+      .stop-btn-container .slider:before,
+      .stop-btn-container .slider .seed {
+        transform: translateX(1.5em);
+      }
 
-        .header h1 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-        }
-        
-        .header h1 span {
-             -webkit-text-fill-color: initial; /* Allow emoji color */
-        }
+      .stop-btn-container .slider .seed {
+        opacity: 0;
+      }
 
-        .theme-toggle {
-            position: absolute;
-            top: 50%;
-            right: 1rem;
-            transform: translateY(-50%);
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.5rem;
-        }
+      .stop-btn-container .slider .plant {
+        opacity: 1;
+        transform: scale(1);
+        animation: none;
+      }
 
-        .theme-toggle:hover {
-            border-color: var(--accent);
-            transform: translateY(-50%) scale(1.1) rotate(15deg);
-        }
+      /* * ==============================================
+        * IMAGE PREVIEW & WELCOME MESSAGE
+        * ==============================================
+        */
+      .image-preview {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
 
-        /* * ==============================================
-         * PREFERENCES PANEL
-         * ==============================================
-         */
-        .preferences-panel {
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin-top: 2rem; /* Added margin to separate from sticky header */
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-color);
-            transition: all 0.3s ease;
-        }
+      .preview-item {
+        position: relative;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        width: 80px;
+        height: 80px;
+        border: 2px solid var(--border-color);
+        animation: fadeInUp 0.3s ease-out;
+      }
 
+      .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .preview-item.invalid {
+        border-color: var(--error);
+      }
+
+      .preview-item .remove-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        transition: all 0.2s ease;
+      }
+      .preview-item .remove-btn:hover {
+        background: var(--error);
+        transform: scale(1.1);
+      }
+
+      .welcome-message {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-secondary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+      }
+
+      .welcome-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      .welcome-message h3 {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .quick-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 1rem;
+      }
+
+      .quick-action {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 999px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+      }
+
+      .quick-action:hover {
+        background: var(--bg);
+        border-color: var(--accent);
+        color: var(--accent);
+        transform: translateY(-2px);
+      }
+
+      /* * ==============================================
+        * LOADING & PROGRESS
+        * ==============================================
+        */
+      .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        padding: 1rem;
+      }
+
+      .loading-spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border-color);
+        border-top: 2px solid var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      #progress-bar {
+        padding: 0 1.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .typing-cursor {
+        animation: blink 1s step-end infinite;
+      }
+
+      @keyframes blink {
+        from,
+        to {
+          color: transparent;
+        }
+        50% {
+          color: var(--text-primary);
+        }
+      }
+
+      /* * ==============================================
+        * MARKDOWN PROSE STYLES
+        * ==============================================
+        */
+      .prose {
+        max-width: 100%;
+        overflow-x: auto;
+      }
+      .prose h1,
+      .prose h2,
+      .prose h3,
+      .prose h4 {
+        margin-top: 1.25em;
+        margin-bottom: 0.75em;
+        font-weight: 700;
+        line-height: 1.3;
+      }
+      .prose h1 {
+        font-size: 1.5em;
+      }
+      .prose h2 {
+        font-size: 1.25em;
+      }
+      .prose h3 {
+        font-size: 1.1em;
+      }
+      .prose p {
+        margin-bottom: 1em;
+        line-height: 1.7;
+      }
+      .prose ul,
+      .prose ol {
+        list-style-position: outside;
+        padding-left: 1.5em;
+        margin-bottom: 1em;
+      }
+      .prose li {
+        margin-bottom: 0.5em;
+      }
+      .prose table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5em 0;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: var(--shadow-light);
+        border: 1px solid var(--border-color);
+      }
+      .prose th,
+      .prose td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        text-align: left;
+      }
+      .prose th {
+        background-color: var(--surface);
+        font-weight: 600;
+        border-bottom: 2px solid var(--border-color);
+      }
+      .prose tr:nth-child(even) {
+        background-color: var(--bg);
+      }
+      .light-theme .prose tr:nth-child(even) {
+        background-color: #f6f8fa;
+      }
+
+      .prose code {
+        background: var(--border-color);
+        padding: 0.2em 0.4em;
+        border-radius: 0.25rem;
+        font-size: 85%;
+      }
+      .prose a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .prose a:hover {
+        text-decoration: underline;
+      }
+      .prose blockquote {
+        border-left: 3px solid var(--accent);
+        padding-left: 1em;
+        margin-left: 0;
+        color: var(--text-secondary);
+      }
+
+      .copy-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        border-radius: 0.5rem;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .copy-btn:hover {
+        background: var(--bg);
+        color: var(--accent);
+      }
+
+      /* * ==============================================
+        * ANIMATIONS & RESPONSIVENESS
+        * ==============================================
+        */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes rotate {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+        100% {
+          transform: translateY(0px);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 0 0 7px rgba(59, 130, 246, 0);
+        }
+      }
+
+      @media (max-width: 768px) {
         .preferences-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 1rem;
-            align-items: end;
+          grid-template-columns: 1fr;
         }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+        .container {
+          padding: 0 1rem 1rem 1rem;
         }
-
-        .input-group label {
-            font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+        .header h1 {
+          font-size: 2rem;
         }
-
-        .input-field {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-color: var(--bg);
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            color: var(--text-primary);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            width: 100%;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238b949e%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 0.65em auto;
-            padding-right: 2.5rem;
+        .preferences-panel {
+          margin-top: 0; /* Changed for sticky */
         }
-        
-        .light-theme .input-field {
-             background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2357606a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            font-size: 1rem;
-            color: white;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -10px var(--accent);
-        }
-
-        /* * ==============================================
-         * CHAT CONTAINER & AREA
-         * ==============================================
-         */
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: var(--shadow-color);
-            transition: all 0.3s ease;
-        }
-
-        .chat-area {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-            max-height: calc(100vh - 420px); /* Adjust based on other elements */
-            min-height: 300px;
-            scroll-behavior: smooth;
-        }
-
-        .chat-area::-webkit-scrollbar { width: 8px; }
-        .chat-area::-webkit-scrollbar-track { background: transparent; }
-        .chat-area::-webkit-scrollbar-thumb {
-            background-color: var(--border-color);
-            border-radius: 4px;
-            border: 2px solid var(--surface);
-        }
-        .chat-area::-webkit-scrollbar-thumb:hover { background-color: var(--accent); }
-
-        /* * ==============================================
-         * MESSAGES
-         * ==============================================
-         */
-        .message {
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            animation: fadeInUp 0.4s ease-out;
-        }
-
-        .message.user { flex-direction: row-reverse; }
-
-        .message-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            font-size: 1.5rem;
-        }
-
-        .message.user .message-avatar { background: var(--user-gradient); }
-        .message.bot .message-avatar { background: var(--primary-gradient); }
-        .message.error .message-avatar { background: var(--error); }
-
         .message-content {
-            max-width: 75%;
-            padding: 1rem 1.25rem;
-            border-radius: 1rem;
-            position: relative;
-            word-wrap: break-word;
+          max-width: 90%;
         }
-        
-        .message.bot .message-content:hover .copy-btn {
-            opacity: 1;
+        .chat-area {
+          padding: 1rem;
+          max-height: calc(100vh - 360px);
         }
-
-        .message.user .message-content {
-            background: var(--accent);
-            color: white;
-            border-bottom-right-radius: 0.25rem;
-        }
-
-        .message.bot .message-content {
-            background: var(--bg);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            border-bottom-left-radius: 0.25rem;
-        }
-
-        .message.error .message-content {
-            background: var(--error);
-            color: white;
-            border-bottom-left-radius: 0.25rem;
-        }
-        
-        .message-content .btn-retry {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.5);
-            margin-top: 0.5rem;
-        }
-        .message-content .btn-retry:hover {
-             background: rgba(255,255,255,0.3);
-        }
-
-        .message-time {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-            text-align: right;
-        }
-        .message.bot .message-time { color: var(--text-secondary); }
-        .message.user .message-time { color: rgba(255, 255, 255, 0.7); }
-
-        /* * ==============================================
-         * INPUT PANEL
-         * ==============================================
-         */
         .input-panel {
-            padding: 1rem 1.5rem;
-            background: var(--surface);
-            border-top: 1px solid var(--border-color);
+          padding: 1rem;
         }
-
-        .input-container {
-            display: flex;
-            align-items: flex-end;
-            gap: 1rem;
-            background: var(--bg);
-            border: 1px solid var(--border-color);
-            border-radius: 1rem;
-            padding: 0.5rem 0.5rem 0.5rem 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .input-container:focus-within {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-
-        .message-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text-primary);
-            font-size: 1rem;
-            line-height: 1.5;
-            resize: none;
-            min-height: 24px; /* Matches line-height */
-            max-height: 120px;
-            overflow-y: auto;
-            padding: 0.25rem 0; /* Vertical alignment */
-        }
-
-        .message-input:focus { outline: none; }
-        .message-input::placeholder { color: var(--text-secondary); }
-
-        .input-actions { display: flex; gap: 0.5rem; }
-
-        .icon-btn {
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            font-size: 1.25rem;
-        }
-
-        .icon-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .upload-btn input {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        
-        /* New Send Button Styles */
-        .send-btn-new {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 0 10px;
-            color: white;
-            text-transform: uppercase;
-            cursor: pointer;
-            border: solid 2px black;
-            letter-spacing: 1px;
-            font-weight: 600;
-            font-size: 17px;
-            background-color: var(--accent);
-            border-radius: 50px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.5s ease;
-            min-height: 40px;
-        }
-
-        .send-btn-new:active {
-            transform: scale(0.9);
-            transition: all 100ms ease;
-        }
-
-        .send-btn-new svg {
-            transition: all 0.5s ease;
-            z-index: 2;
-        }
-
-        .send-btn-new .play {
-            transition: all 0.5s ease;
-            transition-delay: 300ms;
-        }
-
-        .send-btn-new:hover svg {
-            transform: scale(3) translate(50%);
-        }
-
-        .send-btn-new .now {
-            position: absolute;
-            left: 0;
-            transform: translateX(-100%);
-            transition: all 0.5s ease;
-            z-index: 2;
-        }
-
-        .send-btn-new:hover .now {
-            transform: translateX(10px);
-            transition-delay: 300ms;
-        }
-
-        .send-btn-new:hover .play {
-            transform: translateX(200%);
-            transition-delay: 300ms;
-        }
-        
-        .send-btn-new.stop-btn {
-            background-color: var(--error);
-        }
-        
-        .send-btn-new.stop-btn:hover svg {
-            transform: none;
-        }
-
-        /* * ==============================================
-         * IMAGE PREVIEW & WELCOME MESSAGE
-         * ==============================================
-         */
-        .image-preview {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .preview-item {
-            position: relative;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            width: 80px;
-            height: 80px;
-            border: 2px solid var(--border-color);
-            animation: fadeInUp 0.3s ease-out;
-        }
-
-        .preview-item img { width: 100%; height: 100%; object-fit: cover; }
-        .preview-item.invalid { border-color: var(--error); }
-
-        .preview-item .remove-btn {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 14px;
-            line-height: 1;
-            transition: all 0.2s ease;
-        }
-        .preview-item .remove-btn:hover { background: var(--error); transform: scale(1.1); }
-
-        .welcome-message {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-        }
-        
-        .welcome-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .welcome-message h3 {
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .quick-actions {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-
-        .quick-action {
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            border-radius: 999px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .quick-action:hover {
-            background: var(--bg);
-            border-color: var(--accent);
-            color: var(--accent);
-            transform: translateY(-2px);
-        }
-
-        /* * ==============================================
-         * LOADING & PROGRESS
-         * ==============================================
-         */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            padding: 1rem;
-        }
-
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border-color);
-            border-top: 2px solid var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        #progress-bar {
-            padding: 0 1.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .typing-cursor {
-            animation: blink 1s step-end infinite;
-        }
-
-        @keyframes blink {
-            from, to { color: transparent; }
-            50% { color: var(--text-primary); }
-        }
-
-        /* * ==============================================
-         * MARKDOWN PROSE STYLES
-         * ==============================================
-         */
-        .prose { max-width: 100%; overflow-x: auto; }
-        .prose h1, .prose h2, .prose h3, .prose h4 {
-            margin-top: 1.25em;
-            margin-bottom: 0.75em;
-            font-weight: 700;
-            line-height: 1.3;
-        }
-        .prose h1 { font-size: 1.5em; }
-        .prose h2 { font-size: 1.25em; }
-        .prose h3 { font-size: 1.1em; }
-        .prose p { margin-bottom: 1em; line-height: 1.7; }
-        .prose ul, .prose ol { list-style-position: outside; padding-left: 1.5em; margin-bottom: 1em; }
-        .prose li { margin-bottom: 0.5em; }
-        .prose table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1.5em 0;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            box-shadow: var(--shadow-light);
-            border: 1px solid var(--border-color);
-        }
-        .prose th, .prose td {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-            text-align: left;
-        }
-        .prose th {
-            background-color: var(--surface);
-            font-weight: 600;
-            border-bottom: 2px solid var(--border-color);
-        }
-        .prose tr:nth-child(even) {
-            background-color: var(--bg);
-        }
-        .light-theme .prose tr:nth-child(even) {
-            background-color: #f6f8fa;
-        }
-
-        .prose code {
-            background: var(--border-color);
-            padding: 0.2em 0.4em;
-            border-radius: 0.25rem;
-            font-size: 85%;
-        }
-        .prose a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-        .prose a:hover {
-            text-decoration: underline;
-        }
-        .prose blockquote {
-            border-left: 3px solid var(--accent);
-            padding-left: 1em;
-            margin-left: 0;
-            color: var(--text-secondary);
-        }
-        
-        .copy-btn {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: var(--surface);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            border-radius: 0.5rem;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        
-        .copy-btn:hover {
-            background: var(--bg);
-            color: var(--accent);
-        }
-
-        /* * ==============================================
-         * ANIMATIONS & RESPONSIVENESS
-         * ==============================================
-         */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-            50% { transform: scale(1.05); box-shadow: 0 0 0 7px rgba(59, 130, 246, 0); }
-        }
-
-        @media (max-width: 768px) {
-            .preferences-grid { grid-template-columns: 1fr; }
-            .container { padding: 0 1rem 1rem 1rem; }
-            .header h1 { font-size: 2rem; }
-            .preferences-panel { margin-top: 1rem; }
-            .message-content { max-width: 90%; }
-            .chat-area { padding: 1rem; max-height: calc(100vh - 360px); }
-            .input-panel { padding: 1rem; }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>
-                <span>🌿</span>
-                AgriBot
-            </h1>
-            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
-                <span>☀️</span>
-            </button>
+      <div class="header">
+        <h1>
+          <span>🌿</span>
+          AgriBot
+        </h1>
+        <label id="theme-toggle-button">
+          <input type="checkbox" id="toggle" />
+          <svg
+            viewBox="0 0 69.667 44"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <g
+              transform="translate(3.5 3.5)"
+              data-name="Component 15 – 1"
+              id="Component_15_1"
+            >
+              <g
+                filter="url(#container)"
+                transform="matrix(1, 0, 0, 1, -3.5, -3.5)"
+              >
+                <rect
+                  fill="#83cbd8"
+                  transform="translate(3.5 3.5)"
+                  rx="17.5"
+                  height="35"
+                  width="60.667"
+                  data-name="container"
+                  id="container"
+                ></rect>
+              </g>
+
+              <g transform="translate(2.333 2.333)" id="button">
+                <g data-name="sun" id="sun">
+                  <g
+                    filter="url(#sun-outer)"
+                    transform="matrix(1, 0, 0, 1, -5.83, -5.83)"
+                  >
+                    <circle
+                      fill="#f8e664"
+                      transform="translate(5.83 5.83)"
+                      r="15.167"
+                      cy="15.167"
+                      cx="15.167"
+                      data-name="sun-outer"
+                      id="sun-outer-2"
+                    ></circle>
+                  </g>
+                  <g
+                    filter="url(#sun)"
+                    transform="matrix(1, 0, 0, 1, -5.83, -5.83)"
+                  >
+                    <path
+                      fill="rgba(246,254,247,0.29)"
+                      transform="translate(9.33 9.33)"
+                      d="M11.667,0A11.667,11.667,0,1,1,0,11.667,11.667,11.667,0,0,1,11.667,0Z"
+                      data-name="sun"
+                      id="sun-3"
+                    ></path>
+                  </g>
+                  <circle
+                    fill="#fcf4b9"
+                    transform="translate(8.167 8.167)"
+                    r="7"
+                    cy="7"
+                    cx="7"
+                    id="sun-inner"
+                  ></circle>
+                </g>
+
+                <g data-name="moon" id="moon">
+                  <g
+                    filter="url(#moon)"
+                    transform="matrix(1, 0, 0, 1, -31.5, -5.83)"
+                  >
+                    <circle
+                      fill="#cce6ee"
+                      transform="translate(31.5 5.83)"
+                      r="15.167"
+                      cy="15.167"
+                      cx="15.167"
+                      data-name="moon"
+                      id="moon-3"
+                    ></circle>
+                  </g>
+                  <g
+                    fill="#a6cad0"
+                    transform="translate(-24.415 -1.009)"
+                    id="patches"
+                  >
+                    <circle
+                      transform="translate(43.009 4.496)"
+                      r="2"
+                      cy="2"
+                      cx="2"
+                    ></circle>
+                    <circle
+                      transform="translate(39.366 17.952)"
+                      r="2"
+                      cy="2"
+                      cx="2"
+                      data-name="patch"
+                    ></circle>
+                    <circle
+                      transform="translate(33.016 8.044)"
+                      r="1"
+                      cy="1"
+                      cx="1"
+                      data-name="patch"
+                    ></circle>
+                    <circle
+                      transform="translate(51.081 18.888)"
+                      r="1"
+                      cy="1"
+                      cx="1"
+                      data-name="patch"
+                    ></circle>
+                    <circle
+                      transform="translate(33.016 22.503)"
+                      r="1"
+                      cy="1"
+                      cx="1"
+                      data-name="patch"
+                    ></circle>
+                    <circle
+                      transform="translate(50.081 10.53)"
+                      r="1.5"
+                      cy="1.5"
+                      cx="1.5"
+                      data-name="patch"
+                    ></circle>
+                  </g>
+                </g>
+              </g>
+
+              <g
+                filter="url(#cloud)"
+                transform="matrix(1, 0, 0, 1, -3.5, -3.5)"
+              >
+                <path
+                  fill="#fff"
+                  transform="translate(-3466.47 -160.94)"
+                  d="M3512.81,173.815a4.463,4.463,0,0,1,2.243.62.95.95,0,0,1,.72-1.281,4.852,4.852,0,0,1,2.623.519c.034.02-.5-1.968.281-2.716a2.117,2.117,0,0,1,2.829-.274,1.821,1.821,0,0,1,.854,1.858c.063.037,2.594-.049,3.285,1.273s-.865,2.544-.807,2.626a12.192,12.192,0,0,1,2.278.892c.553.448,1.106,1.992-1.62,2.927a7.742,7.742,0,0,1-3.762-.3c-1.28-.49-1.181-2.65-1.137-2.624s-1.417,2.2-2.623,2.2a4.172,4.172,0,0,1-2.394-1.206,3.825,3.825,0,0,1-2.771.774c-3.429-.46-2.333-3.267-2.2-3.55A3.721,3.721,0,0,1,3512.81,173.815Z"
+                  data-name="cloud"
+                  id="cloud"
+                ></path>
+              </g>
+
+              <g
+                fill="#def8ff"
+                transform="translate(3.585 1.325)"
+                id="stars"
+              >
+                <path
+                  transform="matrix(-1, 0.017, -0.017, -1, 24.231, 3.055)"
+                  d="M.774,0,.566.559,0,.539.458.933.25,1.492l.485-.361.458.394L1.024.953,1.509.592.943.572Z"
+                ></path>
+                <path
+                  transform="matrix(-0.777, 0.629, -0.629, -0.777, 23.185, 12.358)"
+                  d="M1.341.529.836.472.736,0,.505.46,0,.4.4.729l-.231.46L.605.932l.4.326L.9.786Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="matrix(0.438, 0.899, -0.899, 0.438, 23.177, 29.735)"
+                  d="M.015,1.065.475.9l.285.365L.766.772l.46-.164L.745.494.751,0,.481.407,0,.293.285.658Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="translate(12.677 0.388) rotate(104)"
+                  d="M1.161,1.6,1.059,1,1.574.722.962.607.86,0,.613.572,0,.457.446.881.2,1.454l.516-.274Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="matrix(-0.07, 0.998, -0.998, -0.07, 11.066, 15.457)"
+                  d="M.873,1.648l.114-.62L1.579.945,1.03.62,1.144,0,.706.464.157.139.438.7,0,1.167l.592-.083Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="translate(8.326 28.061) rotate(11)"
+                  d="M.593,0,.638.724,0,.982l.7.211.045.724.36-.64.7.211L1.342.935,1.7.294,1.063.552Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="translate(5.012 5.962) rotate(172)"
+                  d="M.816,0,.5.455,0,.311.323.767l-.312.455.516-.215.323.456L.827.911,1.343.7.839.552Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="translate(2.218 14.616) rotate(169)"
+                  d="M1.261,0,.774.571.114.3.487.967,0,1.538.728,1.32l.372.662.047-.749.728-.218L1.215.749Z"
+                  data-name="star"
+                ></path>
+              </g>
+            </g>
+          </svg>
+        </label>
+      </div>
+
+      <div class="preferences-panel">
+        <div class="preferences-grid">
+          <div class="input-group">
+            <label for="region">Region</label>
+            <select
+              id="region"
+              class="input-field"
+              aria-label="Select your region"
+            >
+              <option value="India">India (General)</option>
+              <option value="Andaman and Nicobar Islands">
+                Andaman and Nicobar Islands
+              </option>
+              <option value="Andhra Pradesh">Andhra Pradesh</option>
+              <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+              <option value="Assam">Assam</option>
+              <option value="Bihar">Bihar</option>
+              <option value="Chandigarh">Chandigarh</option>
+              <option value="Chhattisgarh">Chhattisgarh</option>
+              <option value="Dadra and Nagar Haveli and Daman and Diu">
+                Dadra & Nagar Haveli and Daman & Diu
+              </option>
+              <option value="Delhi">Delhi</option>
+              <option value="Goa">Goa</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="Haryana">Haryana</option>
+              <option value="Himachal Pradesh">Himachal Pradesh</option>
+              <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+              <option value="Jharkhand">Jharkhand</option>
+              <option value="Karnataka">Karnataka</option>
+              <option value="Kerala">Kerala</option>
+              <option value="Ladakh">Ladakh</option>
+              <option value="Lakshadweep">Lakshadweep</option>
+              <option value="Madhya Pradesh">Madhya Pradesh</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Manipur">Manipur</option>
+              <option value="Meghalaya">Meghalaya</option>
+              <option value="Mizoram">Mizoram</option>
+              <option value="Nagaland">Nagaland</option>
+              <option value="Odisha">Odisha</option>
+              <option value="Puducherry">Puducherry</option>
+              <option value="Punjab">Punjab</option>
+              <option value="Rajasthan">Rajasthan</option>
+              <option value="Sikkim">Sikkim</option>
+              <option value="Tamil Nadu">Tamil Nadu</option>
+              <option value="Telangana">Telangana</option>
+              <option value="Tripura">Tripura</option>
+              <option value="Uttar Pradesh">Uttar Pradesh</option>
+              <option value="Uttarakhand">Uttarakhand</option>
+              <option value="West Bengal">West Bengal</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="language">Language</label>
+            <select
+              id="language"
+              class="input-field"
+              aria-label="Select your language"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिंदी (Hindi)</option>
+              <option value="ta">தமிழ் (Tamil)</option>
+              <option value="bn">বাংলা (Bengali)</option>
+              <option value="te">తెలుగు (Telugu)</option>
+              <option value="gu">ગુજરાતી (Gujarati)</option>
+              <option value="mr">मराठी (Marathi)</option>
+              <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+              <option value="or">ଓଡ଼ିଆ (Odia)</option>
+            </select>
+          </div>
+
+          <button
+            class="btn btn-primary"
+            onclick="setPreferences()"
+            aria-label="Set preferences"
+          >
+            <span>✅</span>
+            Set Preferences
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-area" id="chat-area">
+          <div class="welcome-message">
+            <div class="welcome-icon">🤖</div>
+            <h3>Welcome to AgriBot!</h3>
+            <p>I'm here to help you with:</p>
+            <div class="quick-actions">
+              <button
+                class="quick-action"
+                onclick="sendQuickMessage('What crops are suitable for my region?')"
+              >
+                Crop Recommendations
+              </button>
+              <button
+                class="quick-action"
+                onclick="sendQuickMessage('What is the current weather forecast?')"
+              >
+                Weather Info
+              </button>
+              <button
+                class="quick-action"
+                onclick="sendQuickMessage('How to prevent common plant diseases?')"
+              >
+                Disease Prevention
+              </button>
+              <button
+                class="quick-action"
+                onclick="sendQuickMessage('Best fertilizers for vegetables?')"
+              >
+                Fertilizer Guide
+              </button>
+            </div>
+            <p style="margin-top: 1.5rem; font-size: 0.9rem">
+              You can also upload plant images for disease detection!
+            </p>
+          </div>
+          <div id="progress-bar" class="mt-4 hidden">
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                id="progress"
+                class="bg-blue-600 h-2.5 rounded-full"
+                style="width: 0%"
+              ></div>
+            </div>
+            <p
+              id="progress-text"
+              class="text-center text-sm text-gray-400 mt-1"
+            ></p>
+          </div>
         </div>
 
-        <div class="preferences-panel">
-            <div class="preferences-grid">
-                <div class="input-group">
-                    <label for="region">Region</label>
-                    <select id="region" class="input-field" aria-label="Select your region">
-                        <option value="India">India (General)</option>
-                        <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
-                        <option value="Andhra Pradesh">Andhra Pradesh</option>
-                        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-                        <option value="Assam">Assam</option>
-                        <option value="Bihar">Bihar</option>
-                        <option value="Chandigarh">Chandigarh</option>
-                        <option value="Chhattisgarh">Chhattisgarh</option>
-                        <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra & Nagar Haveli and Daman & Diu</option>
-                        <option value="Delhi">Delhi</option>
-                        <option value="Goa">Goa</option>
-                        <option value="Gujarat">Gujarat</option>
-                        <option value="Haryana">Haryana</option>
-                        <option value="Himachal Pradesh">Himachal Pradesh</option>
-                        <option value="Jammu and Kashmir">Jammu and Kashmir</option>
-                        <option value="Jharkhand">Jharkhand</option>
-                        <option value="Karnataka">Karnataka</option>
-                        <option value="Kerala">Kerala</option>
-                        <option value="Ladakh">Ladakh</option>
-                        <option value="Lakshadweep">Lakshadweep</option>
-                        <option value="Madhya Pradesh">Madhya Pradesh</option>
-                        <option value="Maharashtra">Maharashtra</option>
-                        <option value="Manipur">Manipur</option>
-                        <option value="Meghalaya">Meghalaya</option>
-                        <option value="Mizoram">Mizoram</option>
-                        <option value="Nagaland">Nagaland</option>
-                        <option value="Odisha">Odisha</option>
-                        <option value="Puducherry">Puducherry</option>
-                        <option value="Punjab">Punjab</option>
-                        <option value="Rajasthan">Rajasthan</option>
-                        <option value="Sikkim">Sikkim</option>
-                        <option value="Tamil Nadu">Tamil Nadu</option>
-                        <option value="Telangana">Telangana</option>
-                        <option value="Tripura">Tripura</option>
-                        <option value="Uttar Pradesh">Uttar Pradesh</option>
-                        <option value="Uttarakhand">Uttarakhand</option>
-                        <option value="West Bengal">West Bengal</option>
-                    </select>
-                </div>
-                
-                <div class="input-group">
-                    <label for="language">Language</label>
-                    <select id="language" class="input-field" aria-label="Select your language">
-                        <option value="en">English</option>
-                        <option value="hi">हिंदी (Hindi)</option>
-                        <option value="ta">தமிழ் (Tamil)</option>
-                        <option value="bn">বাংলা (Bengali)</option>
-                        <option value="te">తెలుగు (Telugu)</option>
-                        <option value="gu">ગુજરાતી (Gujarati)</option>
-                        <option value="mr">मराठी (Marathi)</option>
-                        <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
-                        <option value="or">ଓଡ଼ିଆ (Odia)</option>
-                    </select>
-                </div>
-                
-                <button class="btn btn-primary" onclick="setPreferences()" aria-label="Set preferences">
-                    <span>✅</span>
-                    Set Preferences
-                </button>
+        <div class="input-panel">
+          <div class="image-preview" id="image-preview"></div>
+          <div class="input-container">
+            <textarea
+              id="message-input"
+              class="message-input"
+              placeholder="Ask about crops, weather, diseases..."
+              rows="1"
+              aria-label="Enter your message or question"
+            ></textarea>
+            <div class="input-actions">
+              <label
+                class="icon-btn upload-btn"
+                title="Upload plant images"
+                aria-label="Upload plant images"
+              >
+                <span>📎</span>
+                <input
+                  type="file"
+                  id="image-input"
+                  accept="image/png,image/jpeg,image/jpg"
+                  multiple
+                />
+              </label>
+              <label class="switch">
+                <input type="checkbox" />
+                <span class="slider">
+                  <svg
+                    class="seed"
+                    version="1.1"
+                    id="Layer_1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns:xlink="http://www.w3.org/1999/xlink"
+                    viewBox="0 0 512.004 512.004"
+                    xml:space="preserve"
+                    fill="#000000"
+                  >
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g
+                      id="SVGRepo_tracerCarrier"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></g>
+                    <g id="SVGRepo_iconCarrier">
+                      <g>
+                        <path
+                          style="fill: #e5c11f"
+                          d="M370.114,157.811C351.523,65.174,307.456,0,256,0c-51.447,0-95.514,65.174-114.114,157.811 c41.057,46.036,72.854,122.827,92.328,199.477C251.065,406.528,256,461.356,256,512c0-50.644,4.935-105.472,21.786-154.712 C297.269,280.638,329.057,203.847,370.114,157.811"
+                        ></path>
+                        <path
+                          style="fill: #af6d2d"
+                          d="M256.002,512.004c0-138.664-77.241-397.241-194.207-397.241 C-19.966,351.668,96.373,512.004,256.002,512.004"
+                        ></path>
+                        <path
+                          style="fill: #864d18"
+                          d="M185.347,471.952c-1.121,0-2.26-0.221-3.363-0.671c-31.603-13.065-58.033-34.278-78.539-63.047 c-41.393-58.068-52.515-141.047-31.329-233.657c1.086-4.758,5.826-7.733,10.575-6.63c4.749,1.086,7.724,5.817,6.638,10.567 c-20.047,87.623-9.931,165.57,28.495,219.471c18.556,26.033,42.408,45.197,70.894,56.973c4.511,1.863,6.656,7.027,4.793,11.529 C192.1,469.895,188.816,471.952,185.347,471.952"
+                        ></path>
+                        <path
+                          style="fill: #af6d2d"
+                          d="M256.002,512.004c0-138.664,77.241-397.241,194.207-397.241 C531.97,351.668,415.631,512.004,256.002,512.004"
+                        ></path>
+                        <path
+                          style="fill: #b49377"
+                          d="M184.403,141.249c-0.83,0-1.66-0.124-2.498-0.362c-4.67-1.377-7.353-6.285-5.976-10.964 c11.714-39.812,28.637-71.318,47.634-88.691c3.593-3.302,9.181-3.046,12.473,0.556c3.293,3.593,3.037,9.181-0.556,12.473 c-16.419,15.007-31.947,44.403-42.611,80.649C191.739,138.751,188.216,141.249,184.403,141.249"
+                        ></path>
+                      </g>
+                    </g>
+                  </svg>
+                  <svg
+                    class="plant"
+                    version="1.1"
+                    id="Layer_1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns:xlink="http://www.w3.org/1999/xlink"
+                    viewBox="0 0 512.002 512.002"
+                    xml:space="preserve"
+                    fill="#000000"
+                  >
+                    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                    <g
+                      id="SVGRepo_tracerCarrier"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></g>
+                    <g id="SVGRepo_iconCarrier">
+                      <g>
+                        <path
+                          style="fill: #8b4513"
+                          d="M252.899,512.002c-4.504,0-8.313-3.471-8.643-8.036c-7.706-104.222,3.662-160.516,11.186-197.762 c8.669-42.947,12.635-62.551-18.276-109.698c-2.629-4.009-1.51-9.39,2.499-12.019c4.009-2.629,9.39-1.519,12.019,2.499 c34.816,53.118,29.826,77.815,20.766,122.654c-7.775,38.487-18.415,91.205-10.891,193.041c0.356,4.782-3.237,8.947-8.01,9.294 C253.333,511.994,253.116,512.002,252.899,512.002"
+                        ></path>
+                        <g>
+                          <path
+                            style="fill: #91cf96"
+                            d="M252.908,512.002c0-81.651-45.481-234.305-114.35-234.305 C90.422,417.187,158.917,512.002,252.908,512.002"
+                          ></path>
+                          <path
+                            style="fill: #91cf96"
+                            d="M252.908,512.002c0-81.651,45.481-234.305,114.35-234.305 C415.394,417.187,346.899,512.002,252.908,512.002"
+                          ></path>
+                          <path
+                            style="fill: #91cf96"
+                            d="M270.264,277.697c-1.927,0-3.81-0.642-5.346-1.84c-2.013-1.579-3.237-3.966-3.332-6.517 c-2.994-81.868,59.184-115.538,118.376-119.747c2.3-0.148,4.565,0.599,6.3,2.1c1.736,1.51,2.803,3.645,2.968,5.944 c0.876,12.314-16.419,98.807-117.187,119.877C271.453,277.636,270.854,277.697,270.264,277.697"
+                          ></path>
+                          <path
+                            style="fill: #91cf96"
+                            d="M244.332,200.401c-0.963,0-1.927-0.165-2.846-0.495c-65.38-23.535-89.183-69.068-97.644-103.12 c-10.865-43.728-0.946-85.001,7.194-93.948c2.291-2.517,5.84-3.463,9.068-2.421c18.701,6.014,115.252,67.098,92.898,192.738 c-0.061,0.347-0.148,0.694-0.252,1.033c-0.694,2.265-2.308,4.209-4.434,5.268C247.074,200.071,245.703,200.401,244.332,200.401"
+                          ></path>
+                        </g>
+                        <g>
+                          <path
+                            style="fill: #5aba63"
+                            d="M270.264,277.697c-2.187,0-4.382-0.824-6.075-2.482c-3.419-3.35-3.48-8.843-0.121-12.271 l53.404-54.524c3.358-3.428,8.852-3.48,12.271-0.13c3.428,3.35,3.489,8.843,0.13,12.271l-53.413,54.532 C274.768,276.829,272.512,277.697,270.264,277.697"
+                          ></path>
+                          <path
+                            style="fill: #5aba63"
+                            d="M244.467,200.311c-3.15,0-6.187-1.718-7.732-4.712l-39.224-76.436 c-2.196-4.261-0.503-9.494,3.758-11.681c4.261-2.204,9.494-0.503,11.681,3.758l39.233,76.427c2.187,4.27,0.503,9.502-3.758,11.689 C247.157,200.008,245.795,200.311,244.467,200.311"
+                          ></path>
+                        </g>
+                      </g>
+                    </g>
+                  </svg>
+                </span>
+              </label>
             </div>
+          </div>
         </div>
-
-        <div class="chat-container">
-            <div class="chat-area" id="chat-area">
-                <div class="welcome-message">
-                    <div class="welcome-icon">🤖</div>
-                    <h3>Welcome to AgriBot!</h3>
-                    <p>I'm here to help you with:</p>
-                    <div class="quick-actions">
-                        <button class="quick-action" onclick="sendQuickMessage('What crops are suitable for my region?')">Crop Recommendations</button>
-                        <button class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')">Weather Info</button>
-                        <button class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')">Disease Prevention</button>
-                        <button class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')">Fertilizer Guide</button>
-                    </div>
-                    <p style="margin-top: 1.5rem; font-size: 0.9rem;">You can also upload plant images for disease detection!</p>
-                </div>
-                <div id="progress-bar" class="mt-4 hidden">
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div id="progress" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <p id="progress-text" class="text-center text-sm text-gray-400 mt-1"></p>
-                </div>
-            </div>
-
-            <div class="input-panel">
-                <div class="image-preview" id="image-preview"></div>
-                <div class="input-container">
-                    <textarea id="message-input" class="message-input" placeholder="Ask about crops, weather, diseases..." rows="1" aria-label="Enter your message or question"></textarea>
-                    <div class="input-actions">
-                        <label class="icon-btn upload-btn" title="Upload plant images" aria-label="Upload plant images">
-                            <span>📎</span>
-                            <input type="file" id="image-input" accept="image/png,image/jpeg,image/jpg" multiple>
-                        </label>
-                        <button class="send-btn-new" id="send-btn" title="Send message" aria-label="Send message">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="36px" height="36px">
-                                <path fill="#e53935" d="M38.67,42H11.52C11.27,40.62,11,38.57,11,36c0-5,0-11,0-11s1.44-7.39,3.22-9.59 c1.67-2.06,2.76-3.48,6.78-4.41c3-0.7,7.13-0.23,9,1c2.15,1.42,3.37,6.67,3.81,11.29c1.49-0.3,5.21,0.2,5.5,1.28 C40.89,30.29,39.48,38.31,38.67,42z"></path>
-                                <path fill="#b71c1c" d="M39.02,42H11.99c-0.22-2.67-0.48-7.05-0.49-12.72c0.83,4.18,1.63,9.59,6.98,9.79 c3.48,0.12,8.27,0.55,9.83-2.45c1.57-3,3.72-8.95,3.51-15.62c-0.19-5.84-1.75-8.2-2.13-8.7c0.59,0.66,3.74,4.49,4.01,11.7 c0.03,0.83,0.06,1.72,0.08,2.66c4.21-0.15,5.93,1.5,6.07,2.35C40.68,33.85,39.8,38.9,39.02,42z"></path>
-                                <path fill="#212121" d="M35,27.17c0,3.67-0.28,11.2-0.42,14.83h-2C32.72,38.42,33,30.83,33,27.17 c0-5.54-1.46-12.65-3.55-14.02c-1.65-1.08-5.49-1.48-8.23-0.85c-3.62,0.83-4.57,1.99-6.14,3.92L15,16.32 c-1.31,1.6-2.59,6.92-3,8.96v10.8c0,2.58,0.28,4.61,0.54,5.92H10.5c-0.25-1.41-0.5-3.42-0.5-5.92l0.02-11.09 c0.15-0.77,1.55-7.63,3.43-9.94l0.08-0.09c1.65-2.03,2.96-3.63,7.25-4.61c3.28-0.76,7.67-0.25,9.77,1.13 C33.79,13.6,35,22.23,35,27.17z"></path>
-                                <path fill="white" d="M17.165,17.283c5.217-0.055,9.391,0.283,9,6.011c-0.391,5.728-8.478,5.533-9.391,5.337 c-0.913-0.196-7.826-0.043-7.696-5.337C9.209,18,13.645,17.32,17.165,17.283z"></path>
-                                <path fill="#212121" d="M40.739,37.38c-0.28,1.99-0.69,3.53-1.22,4.62h-2.43c0.25-0.19,1.13-1.11,1.67-4.9 c0.57-4-0.23-11.79-0.93-12.78c-0.4-0.4-2.63-0.8-4.37-0.89l0.1-1.99c1.04,0.05,4.53,0.31,5.71,1.49 C40.689,24.36,41.289,33.53,40.739,37.38z"></path>
-                                <path fill="white" d="M10.154,20.201c0.261,2.059-0.196,3.351,2.543,3.546s8.076,1.022,9.402-0.554 c1.326-1.576,1.75-4.365-0.891-5.267C19.336,17.287,12.959,16.251,10.154,20.201z"></path>
-                                <path fill="#212121" d="M17.615,29.677c-0.502,0-0.873-0.03-1.052-0.069c-0.086-0.019-0.236-0.035-0.434-0.06 c-5.344-0.679-8.053-2.784-8.052-6.255c0.001-2.698,1.17-7.238,8.986-7.32l0.181-0.002c3.444-0.038,6.414-0.068,8.272,1.818 c1.173,1.191,1.712,3,1.647,5.53c-0.044,1.688-0.785,3.147-2.144,4.217C22.785,29.296,19.388,29.677,17.615,29.677z M17.086,17.973 c-7.006,0.074-7.008,4.023-7.008,5.321c-0.001,3.109,3.598,3.926,6.305,4.27c0.273,0.035,0.48,0.063,0.601,0.089 c0.563,0.101,4.68,0.035,6.855-1.732c0.865-0.702,1.299-1.57,1.326-2.653c0.051-1.958-0.301-3.291-1.073-4.075 c-1.262-1.281-3.834-1.255-6.825-1.222L17.086,17.973z"></path>
-                                <path fill="#cccccc" d="M15.078,19.043c1.957-0.326,5.122-0.529,4.435,1.304c-0.489,1.304-7.185,2.185-7.185,0.652 C12.328,19.467,15.078,19.043,15.078,19.043z"></path>
-                              </svg>
-                              <span class="now">Now!</span>
-                              <span class="play">Send</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
 
     <script>
-        let isLightTheme = false;
-        let uploadedImages = [];
-        let isProcessing = false;
-        let currentRegion = 'India';
-        let currentLanguage = 'en';
-        let lastRequestTime = 0;
-        const REQUEST_DELAY = 1000; // Reduced delay
-        let abortController;
-        let typewriterInterval;
+      let isLightTheme = false;
+      let uploadedImages = [];
+      let isProcessing = false;
+      let currentRegion = "India";
+      let currentLanguage = "en";
+      let lastRequestTime = 0;
+      const REQUEST_DELAY = 1000; // Reduced delay
+      let abortController;
+      let typewriterInterval;
 
-        const chatArea = document.getElementById('chat-area');
-        const messageInput = document.getElementById('message-input');
-        const imageInput = document.getElementById('image-input');
-        const imagePreview = document.getElementById('image-preview');
-        const sendBtn = document.getElementById('send-btn');
-        const regionSelect = document.getElementById('region');
-        const languageSelect = document.getElementById('language');
-        const themeToggle = document.getElementById('theme-toggle');
-        const progressBar = document.getElementById('progress-bar');
-        const progress = document.getElementById('progress');
-        const progressText = document.getElementById('progress-text');
+      const chatArea = document.getElementById("chat-area");
+      const messageInput = document.getElementById("message-input");
+      const imageInput = document.getElementById("image-input");
+      const imagePreview = document.getElementById("image-preview");
+      const sendBtnContainer = document.querySelector(".switch"); // Modified selector
+      const sendCheckbox = sendBtnContainer.querySelector("input"); // Modified selector
+      const regionSelect = document.getElementById("region");
+      const languageSelect = document.getElementById("language");
+      const themeToggle = document.getElementById("toggle");
+      const progressBar = document.getElementById("progress-bar");
+      const progress = document.getElementById("progress");
+      const progressText = document.getElementById("progress-text");
 
-        document.addEventListener('DOMContentLoaded', () => {
-            sendBtn.addEventListener('click', () => {
-                if (isProcessing) {
-                    stopGeneration();
-                } else {
-                    sendMessage();
-                }
-            });
-
-            const savedPrefs = JSON.parse(localStorage.getItem('userPrefs') || '{}');
-            if (savedPrefs.region) regionSelect.value = savedPrefs.region;
-            if (savedPrefs.language) languageSelect.value = savedPrefs.language;
-            
-            currentRegion = regionSelect.value;
-            currentLanguage = languageSelect.value;
-
-            messageInput.addEventListener('input', () => {
-                autoResize();
-                if (messageInput.value.trim().length > 0) {
-                    sendBtn.classList.add('pulsing');
-                } else {
-                    sendBtn.classList.remove('pulsing');
-                }
-            });
-            messageInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!isProcessing) sendMessage();
-                }
-            });
-
-            imageInput.addEventListener('change', handleImageUpload);
-            themeToggle.addEventListener('click', toggleTheme);
-            setPreferences(true);
+      document.addEventListener("DOMContentLoaded", () => {
+        sendBtnContainer.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (isProcessing) {
+            stopGeneration();
+          } else {
+            sendMessage();
+          }
         });
 
-        function autoResize() {
-            messageInput.style.height = 'auto';
-            messageInput.style.height = messageInput.scrollHeight + 'px';
-        }
+        const savedPrefs = JSON.parse(
+          localStorage.getItem("userPrefs") || "{}"
+        );
+        if (savedPrefs.region) regionSelect.value = savedPrefs.region;
+        if (savedPrefs.language) languageSelect.value = savedPrefs.language;
 
-        function toggleTheme() {
-            isLightTheme = !isLightTheme;
-            document.body.classList.toggle('light-theme', isLightTheme);
-            themeToggle.innerHTML = isLightTheme ? '<span>🌙</span>' : '<span>☀️</span>';
-        }
-        
-        function typewriterEffect(element, text, onComplete) {
-            let i = 0;
-            element.innerHTML = ""; // Clear previous content
-            const cursor = document.createElement('span');
-            cursor.className = 'typing-cursor';
-            cursor.textContent = '█';
-            element.appendChild(cursor);
+        currentRegion = regionSelect.value;
+        currentLanguage = languageSelect.value;
 
-            clearInterval(typewriterInterval);
-            typewriterInterval = setInterval(() => {
-                if (i < text.length) {
-                    cursor.before(text.charAt(i));
-                    i++;
-                    chatArea.scrollTop = chatArea.scrollHeight;
-                } else {
-                    clearInterval(typewriterInterval);
-                    cursor.remove();
-                    if (onComplete) onComplete();
-                }
-            }, 20);
-        }
+        messageInput.addEventListener("input", autoResize);
+        messageInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (!isProcessing) sendMessage();
+          }
+        });
 
-        async function compressImage(file) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                const canvas = document.createElement('canvas');
-                img.src = URL.createObjectURL(file);
-                img.onload = () => {
-                    const maxWidth = 400, maxHeight = 300;
-                    let { width, height } = img;
-                    if (width > height) {
-                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
-                    } else {
-                        if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                    canvas.toBlob(blob => resolve(new File([blob], file.name, { type: 'image/jpeg', quality: 0.85 })), 'image/jpeg');
-                };
-                img.onerror = () => reject(new Error(`Invalid image: ${file.name}`));
-            });
-        }
+        imageInput.addEventListener("change", handleImageUpload);
+        themeToggle.addEventListener("change", toggleTheme);
+        setPreferences(true);
+      });
 
-        function updateProgress(percent, text = '') {
-            progressBar.classList.remove('hidden');
-            progress.style.width = `${percent}%`;
-            progressText.textContent = text;
-            if (percent >= 100) setTimeout(() => progressBar.classList.add('hidden'), 500);
-        }
+      function autoResize() {
+        messageInput.style.height = "auto";
+        messageInput.style.height = messageInput.scrollHeight + "px";
+      }
 
-        async function setPreferences(isInitial = false) {
-            currentRegion = regionSelect.value;
-            currentLanguage = languageSelect.value;
-            localStorage.setItem('userPrefs', JSON.stringify({ region: currentRegion, language: currentLanguage }));
-            if (!isInitial) {
-                addMessage('user', `Preferences updated to Region: ${currentRegion}, Language: ${getLanguageName(currentLanguage)}`);
-                addMessage('bot', `Great! I've updated your preferences.`);
-            }
-        }
+      function toggleTheme() {
+        isLightTheme = themeToggle.checked;
+        document.body.classList.toggle("light-theme", isLightTheme);
+      }
 
-        function getLanguageName(code) {
-            const option = languageSelect.querySelector(`option[value="${code}"]`);
-            return option ? option.textContent : 'English';
-        }
+      function typewriterEffect(element, text, onComplete) {
+        let i = 0;
+        element.innerHTML = ""; // Clear previous content
+        const cursor = document.createElement("span");
+        cursor.className = "typing-cursor";
+        cursor.textContent = "█";
+        element.appendChild(cursor);
 
-        async function handleImageUpload(e) {
-            const files = Array.from(e.target.files);
-            if (files.length > 3) {
-                addMessage('error', 'Please upload a maximum of 3 images.');
-                return;
-            }
-            uploadedImages = [];
-            imagePreview.innerHTML = '';
-            updateProgress(10, 'Processing images...');
-            const processingPromises = files.map(async (file, i) => {
-                if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-                    addMessage('error', `Invalid file type: ${file.name}.`);
-                    return;
-                }
-                try {
-                    const compressed = await compressImage(file);
-                    const previewId = `preview-${Date.now()}-${i}`;
-                    uploadedImages.push({ file: compressed, id: previewId });
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const previewItem = document.createElement('div');
-                        previewItem.className = 'preview-item';
-                        previewItem.id = previewId;
-                        previewItem.innerHTML = `<img src="${e.target.result}" alt="Preview"><button class="remove-btn" onclick="removeImage('${previewId}')">&times;</button>`;
-                        imagePreview.appendChild(previewItem);
-                    };
-                    reader.readAsDataURL(file);
-                } catch (error) {
-                    addMessage('error', `Could not process image: ${file.name}.`);
-                }
-            });
-            await Promise.all(processingPromises);
-            updateProgress(100);
-        }
-
-        function removeImage(previewId) {
-            uploadedImages = uploadedImages.filter(img => img.id !== previewId);
-            document.getElementById(previewId)?.remove();
-            if (uploadedImages.length === 0) imageInput.value = '';
-        }
-
-        function sendQuickMessage(message) {
-            messageInput.value = message;
-            sendMessage();
-        }
-
-        function setSendButtonState(state) {
-            const playSpan = sendBtn.querySelector('.play');
-            const nowSpan = sendBtn.querySelector('.now');
-            const svg = sendBtn.querySelector('svg');
-
-            if (state === 'sending') {
-                isProcessing = true;
-                sendBtn.disabled = false;
-                sendBtn.classList.add('stop-btn');
-                sendBtn.classList.remove('pulsing');
-                if(playSpan) playSpan.textContent = 'Stop';
-                if(nowSpan) nowSpan.style.display = 'none';
-                if(svg) svg.style.display = 'none';
-                sendBtn.title = 'Stop Generating';
-            } else {
-                isProcessing = false;
-                sendBtn.disabled = false;
-                sendBtn.classList.remove('stop-btn');
-                if(playSpan) playSpan.textContent = 'Send';
-                if(nowSpan) nowSpan.style.display = 'inline';
-                if(svg) svg.style.display = 'block';
-                sendBtn.title = 'Send message';
-            }
-        }
-        
-        function stopGeneration() {
-            if (abortController) abortController.abort();
-            clearInterval(typewriterInterval);
-            setSendButtonState('idle'); 
-            const lastBotMessage = document.querySelector('.message.bot:last-child .message-content');
-            if (lastBotMessage && !lastBotMessage.querySelector('.message-time')) {
-                 lastBotMessage.innerHTML = `<p>Generation stopped.</p>`;
-            }
-        }
-
-        async function sendMessage() {
-            if (isProcessing) return;
-            const now = Date.now();
-            if (now - lastRequestTime < REQUEST_DELAY) {
-                addMessage('error', `Please wait a moment before sending another message.`);
-                return;
-            }
-            lastRequestTime = now;
-
-            const message = messageInput.value.trim();
-            const hasImages = uploadedImages.length > 0;
-            if (!message && !hasImages) return;
-
-            setSendButtonState('sending');
-            abortController = new AbortController();
-            
-            document.querySelector('.welcome-message')?.remove();
-            if (message) addMessage('user', message);
-            if (hasImages) addMessage('user', `Uploaded ${uploadedImages.length} image(s) for analysis.`);
-            
-            const botMessageDiv = addMessage('bot', '', true);
-            const messageContentElement = botMessageDiv.querySelector('.message-content');
-
-            const formData = new FormData();
-            if (message) formData.append('query', message);
-            uploadedImages.forEach(img => formData.append('image', img.file));
-            
-            try {
-                const endpoint = hasImages ? '/upload' : '/chat';
-                const res = await fetchWithRetry(endpoint, {
-                    method: 'POST',
-                    body: formData,
-                    signal: abortController.signal
-                }, 3, 1000);
-                
-                if (!res.ok) {
-                    const errorMsg = await res.json();
-                    throw new Error(errorMsg.error || 'An unknown error occurred.');
-                }
-                
-                const data = await res.json();
-                const responseText = hasImages ? data.remedy : data.response;
-                
-                const cleanTextForTyping = responseText.replace(/[`*#_~[\]()<>|]/g, '');
-
-                typewriterEffect(messageContentElement, cleanTextForTyping, () => {
-                    messageContentElement.innerHTML = marked.parse(responseText);
-                    const time = document.createElement('div');
-                    time.className = 'message-time';
-                    time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'copy-btn';
-                    copyBtn.innerHTML = '<span>📋</span>';
-                    copyBtn.title = 'Copy to clipboard';
-                    copyBtn.onclick = () => copyToClipboard(responseText, copyBtn);
-                    
-                    messageContentElement.appendChild(time);
-                    messageContentElement.appendChild(copyBtn);
-                    setSendButtonState('idle');
-                });
-
-            } catch (error) {
-                clearInterval(typewriterInterval);
-                if (error.name === 'AbortError') {
-                    messageContentElement.innerHTML = '<p>Generation stopped by user.</p>';
-                } else {
-                    messageContentElement.innerHTML = `<p>Error: ${error.message}</p>`;
-                }
-                setSendButtonState('idle');
-            } finally {
-                messageInput.value = '';
-                autoResize();
-                uploadedImages = [];
-                imagePreview.innerHTML = '';
-                imageInput.value = '';
-            }
-        }
-        
-        function copyToClipboard(text, buttonElement) {
-            const tempTextArea = document.createElement('textarea');
-            tempTextArea.value = text;
-            document.body.appendChild(tempTextArea);
-            tempTextArea.select();
-            try {
-                document.execCommand('copy');
-                buttonElement.innerHTML = '<span>✅</span>';
-                setTimeout(() => {
-                    buttonElement.innerHTML = '<span>📋</span>';
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy text: ', err);
-            }
-            document.body.removeChild(tempTextArea);
-        }
-
-        async function fetchWithRetry(url, options, retries, backoff) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    return await fetch(url, options);
-                } catch (error) {
-                    if (i === retries - 1 || error.name === 'AbortError') throw error;
-                    await new Promise(resolve => setTimeout(resolve, backoff * (i + 1)));
-                }
-            }
-        }
-
-        function addMessage(type, content, isLoading = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            const icons = { user: '👤', bot: '🤖', error: '⚠️' };
-            avatar.innerHTML = `<span>${icons[type] || ''}</span>`;
-            
-            const messageContent = document.createElement('div');
-            messageContent.className = 'message-content';
-            
-            if (isLoading) {
-                messageContent.innerHTML = `<div class="loading"><div class="loading-spinner"></div><span>Processing...</span></div>`;
-            } else {
-                messageContent.innerHTML = content;
-                const time = document.createElement('div');
-                time.className = 'message-time';
-                time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                messageContent.appendChild(time);
-            }
-            
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(messageContent);
-            chatArea.appendChild(messageDiv);
+        clearInterval(typewriterInterval);
+        typewriterInterval = setInterval(() => {
+          if (i < text.length) {
+            cursor.before(text.charAt(i));
+            i++;
             chatArea.scrollTop = chatArea.scrollHeight;
-            return messageDiv;
+          } else {
+            clearInterval(typewriterInterval);
+            cursor.remove();
+            if (onComplete) onComplete();
+          }
+        }, 20);
+      }
+
+      async function compressImage(file) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          const canvas = document.createElement("canvas");
+          img.src = URL.createObjectURL(file);
+          img.onload = () => {
+            const maxWidth = 400,
+              maxHeight = 300;
+            let { width, height } = img;
+            if (width > height) {
+              if (width > maxWidth) {
+                height *= maxWidth / width;
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width *= maxHeight / height;
+                height = maxHeight;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+            canvas.toBlob(
+              (blob) =>
+                resolve(
+                  new File([blob], file.name, {
+                    type: "image/jpeg",
+                    quality: 0.85,
+                  })
+                ),
+              "image/jpeg"
+            );
+          };
+          img.onerror = () => reject(new Error(`Invalid image: ${file.name}`));
+        });
+      }
+
+      function updateProgress(percent, text = "") {
+        progressBar.classList.remove("hidden");
+        progress.style.width = `${percent}%`;
+        progressText.textContent = text;
+        if (percent >= 100)
+          setTimeout(() => progressBar.classList.add("hidden"), 500);
+      }
+
+      async function setPreferences(isInitial = false) {
+        currentRegion = regionSelect.value;
+        currentLanguage = languageSelect.value;
+        localStorage.setItem(
+          "userPrefs",
+          JSON.stringify({ region: currentRegion, language: currentLanguage })
+        );
+        if (!isInitial) {
+          addMessage(
+            "user",
+            `Preferences updated to Region: ${currentRegion}, Language: ${getLanguageName(
+              currentLanguage
+            )}`
+          );
+          addMessage("bot", `Great! I've updated your preferences.`);
         }
+      }
+
+      function getLanguageName(code) {
+        const option = languageSelect.querySelector(`option[value="${code}"]`);
+        return option ? option.textContent : "English";
+      }
+
+      async function handleImageUpload(e) {
+        const files = Array.from(e.target.files);
+        if (files.length > 3) {
+          addMessage("error", "Please upload a maximum of 3 images.");
+          return;
+        }
+        uploadedImages = [];
+        imagePreview.innerHTML = "";
+        updateProgress(10, "Processing images...");
+        const processingPromises = files.map(async (file, i) => {
+          if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
+            addMessage("error", `Invalid file type: ${file.name}.`);
+            return;
+          }
+          try {
+            const compressed = await compressImage(file);
+            const previewId = `preview-${Date.now()}-${i}`;
+            uploadedImages.push({ file: compressed, id: previewId });
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const previewItem = document.createElement("div");
+              previewItem.className = "preview-item";
+              previewItem.id = previewId;
+              previewItem.innerHTML = `<img src="${e.target.result}" alt="Preview"><button class="remove-btn" onclick="removeImage('${previewId}')">&times;</button>`;
+              imagePreview.appendChild(previewItem);
+            };
+            reader.readAsDataURL(file);
+          } catch (error) {
+            addMessage("error", `Could not process image: ${file.name}.`);
+          }
+        });
+        await Promise.all(processingPromises);
+        updateProgress(100);
+      }
+
+      function removeImage(previewId) {
+        uploadedImages = uploadedImages.filter((img) => img.id !== previewId);
+        document.getElementById(previewId)?.remove();
+        if (uploadedImages.length === 0) imageInput.value = "";
+      }
+
+      function sendQuickMessage(message) {
+        messageInput.value = message;
+        sendMessage();
+      }
+
+      function setSendButtonState(state) {
+        if (state === "sending") {
+          isProcessing = true;
+          sendCheckbox.checked = true;
+          sendBtnContainer.classList.add("stop-btn-container");
+        } else {
+          isProcessing = false;
+          sendCheckbox.checked = false;
+          sendBtnContainer.classList.remove("stop-btn-container");
+        }
+      }
+
+      function stopGeneration() {
+        if (abortController) abortController.abort();
+        clearInterval(typewriterInterval);
+        setSendButtonState("idle");
+        const lastBotMessage = document.querySelector(
+          ".message.bot:last-child .message-content"
+        );
+        if (lastBotMessage && !lastBotMessage.querySelector(".message-time")) {
+          lastBotMessage.innerHTML = `<p>Generation stopped.</p>`;
+        }
+      }
+
+      async function sendMessage() {
+        if (isProcessing) return;
+        const now = Date.now();
+        if (now - lastRequestTime < REQUEST_DELAY) {
+          addMessage(
+            "error",
+            `Please wait a moment before sending another message.`
+          );
+          return;
+        }
+        lastRequestTime = now;
+
+        const message = messageInput.value.trim();
+        const hasImages = uploadedImages.length > 0;
+        if (!message && !hasImages) return;
+
+        setSendButtonState("sending");
+        abortController = new AbortController();
+
+        document.querySelector(".welcome-message")?.remove();
+        if (message) addMessage("user", message);
+        if (hasImages)
+          addMessage(
+            "user",
+            `Uploaded ${uploadedImages.length} image(s) for analysis.`
+          );
+
+        const botMessageDiv = addMessage("bot", "", true);
+        const messageContentElement =
+          botMessageDiv.querySelector(".message-content");
+
+        const formData = new FormData();
+        if (message) formData.append("query", message);
+        uploadedImages.forEach((img) => formData.append("image", img.file));
+
+        try {
+          const endpoint = hasImages ? "/upload" : "/chat";
+          const res = await fetchWithRetry(
+            endpoint,
+            {
+              method: "POST",
+              body: formData,
+              signal: abortController.signal,
+            },
+            3,
+            1000
+          );
+
+          if (!res.ok) {
+            const errorMsg = await res.json();
+            throw new Error(errorMsg.error || "An unknown error occurred.");
+          }
+
+          const data = await res.json();
+          const responseText = hasImages ? data.remedy : data.response;
+
+          const cleanTextForTyping = responseText.replace(
+            /[`*#_~[\]()<>|]/g,
+            ""
+          );
+
+          typewriterEffect(messageContentElement, cleanTextForTyping, () => {
+            messageContentElement.innerHTML = marked.parse(responseText);
+            const time = document.createElement("div");
+            time.className = "message-time";
+            time.textContent = new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
+            const copyBtn = document.createElement("button");
+            copyBtn.className = "copy-btn";
+            copyBtn.innerHTML = "<span>📋</span>";
+            copyBtn.title = "Copy to clipboard";
+            copyBtn.onclick = () => copyToClipboard(responseText, copyBtn);
+
+            messageContentElement.appendChild(time);
+            messageContentElement.appendChild(copyBtn);
+            setSendButtonState("idle");
+          });
+        } catch (error) {
+          clearInterval(typewriterInterval);
+          if (error.name === "AbortError") {
+            messageContentElement.innerHTML =
+              "<p>Generation stopped by user.</p>";
+          } else {
+            messageContentElement.innerHTML = `<p>Error: ${error.message}</p>`;
+          }
+          setSendButtonState("idle");
+        } finally {
+          messageInput.value = "";
+          autoResize();
+          uploadedImages = [];
+          imagePreview.innerHTML = "";
+          imageInput.value = "";
+        }
+      }
+
+      function copyToClipboard(text, buttonElement) {
+        const tempTextArea = document.createElement("textarea");
+        tempTextArea.value = text;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        try {
+          document.execCommand("copy");
+          buttonElement.innerHTML = "<span>✅</span>";
+          setTimeout(() => {
+            buttonElement.innerHTML = "<span>📋</span>";
+          }, 2000);
+        } catch (err) {
+          console.error("Failed to copy text: ", err);
+        }
+        document.body.removeChild(tempTextArea);
+      }
+
+      async function fetchWithRetry(url, options, retries, backoff) {
+        for (let i = 0; i < retries; i++) {
+          try {
+            return await fetch(url, options);
+          } catch (error) {
+            if (i === retries - 1 || error.name === "AbortError") throw error;
+            await new Promise((resolve) =>
+              setTimeout(resolve, backoff * (i + 1))
+            );
+          }
+        }
+      }
+
+      function addMessage(type, content, isLoading = false) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${type}`;
+
+        const avatar = document.createElement("div");
+        avatar.className = "message-avatar";
+        const icons = { user: "👤", bot: "🤖", error: "⚠️" };
+        avatar.innerHTML = `<span>${icons[type] || ""}</span>`;
+
+        const messageContent = document.createElement("div");
+        messageContent.className = "message-content";
+
+        if (isLoading) {
+          messageContent.innerHTML = `<div class="loading"><div class="loading-spinner"></div><span>Processing...</span></div>`;
+        } else {
+          messageContent.innerHTML = content;
+          const time = document.createElement("div");
+          time.className = "message-time";
+          time.textContent = new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          messageContent.appendChild(time);
+        }
+
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(messageContent);
+        chatArea.appendChild(messageDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+        return messageDiv;
+      }
     </script>
-</body>
+  </body>
 </html>
