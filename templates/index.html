@@ -138,7 +138,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 2rem;
+        margin-bottom: 0;
         position: sticky;
         top: 0;
         z-index: 10;
@@ -173,141 +173,45 @@
       }
 
       /* * ==============================================
-        * OVERLAY & SIDE PANEL
+        * PREFERENCES PANEL
         * ==============================================
         */
-      .overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 40;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease-in-out;
-      }
-      .overlay.open {
-        opacity: 1;
-        pointer-events: auto;
-      }
       .preferences-panel {
-        position: fixed;
-        top: 0;
-        right: 0;
-        height: 100vh;
-        width: 100%;
-        max-width: 320px;
-        z-index: 50;
-        background-color: rgba(var(--surface-rgb), 0.9);
+        position: sticky;
+        top: 73px;
+        z-index: 9;
+        background-color: rgba(var(--surface-rgb), 0.8);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid var(--border-color);
-        border-right: none;
+        border-top: none;
+        border-radius: 0 0 1rem 1rem;
         padding: 1.5rem;
+        margin-top: 0;
+        margin-bottom: 2rem;
         box-shadow: var(--shadow-color);
-        transform: translateX(100%);
-        transition: transform 0.3s ease-in-out;
-        display: flex;
-        flex-direction: column;
+        transition: all 0.3s ease;
       }
-      .preferences-panel.open {
-        transform: translateX(0);
-      }
-      .preferences-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border-color);
-      }
-      .preferences-header h3 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin: 0;
-      }
-      .preferences-header .icon-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1.5rem;
-        background: transparent;
-      }
+
       .preferences-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-        height: 100%;
-      }
-      .preferences-grid .btn-primary {
-        margin-top: auto;
-        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 1rem;
+        align-items: end;
       }
 
-      /* * ==============================================
-        * HAMBURGER MENU
-        * ==============================================
-        */
-      #checkbox {
-        display: none;
-      }
-      .toggle {
-        position: relative;
-        width: 4.5em;
-        height: 44px;
-        font-size: 12px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px; /* MODIFIED */
-        transition-duration: 0.3s;
-        z-index: 51;
-      }
-      .bars {
-        width: 75%;
-        height: 3px; /* MODIFIED */
-        background-color: var(--text-primary);
-        border-radius: 5px;
-        transition-duration: 0.3s;
-      }
-      #checkbox:checked + .toggle #bar2 {
-        transform: translateY(13px) rotate(60deg); /* MODIFIED */
-        margin-left: 0;
-        transform-origin: right;
-        transition-duration: 0.3s;
-        z-index: 2;
-      }
-      #checkbox:checked + .toggle #bar1 {
-        transform: translateY(13px) rotate(-60deg); /* MODIFIED */
-        transition-duration: 0.3s;
-        transform-origin: left;
-        z-index: 1;
-      }
-      #checkbox:checked + .toggle {
-        transform: rotate(-90deg);
-      }
-      #checkbox:checked + .toggle #bar3 {
-        opacity: 0;
-      }
-
-      /* * ==============================================
-        * PREFERENCES INPUTS (INSIDE PANEL)
-        * ==============================================
-        */
       .input-group {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
       }
+
       .input-group label {
         font-weight: 600;
         color: var(--text-secondary);
         font-size: 0.9rem;
       }
+
       .input-field {
         -webkit-appearance: none;
         -moz-appearance: none;
@@ -326,14 +230,17 @@
         background-size: 0.65em auto;
         padding-right: 2.5rem;
       }
+
       .light-theme .input-field {
         background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2357606a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
       }
+
       .input-field:focus {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
       }
+
       .btn {
         padding: 0.75rem 1.5rem;
         border: none;
@@ -349,9 +256,11 @@
         font-size: 1rem;
         color: white;
       }
+
       .btn-primary {
         background: var(--accent);
       }
+
       .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 20px -10px var(--accent);
@@ -372,14 +281,16 @@
         box-shadow: var(--shadow-color);
         transition: all 0.3s ease;
       }
+
       .chat-area {
         flex: 1;
         padding: 1.5rem;
         overflow-y: auto;
-        max-height: calc(100vh - 280px); /* Adjusted height */
+        max-height: calc(100vh - 420px);
         min-height: 300px;
         scroll-behavior: smooth;
       }
+
       .chat-area::-webkit-scrollbar {
         width: 8px;
       }
@@ -406,9 +317,11 @@
         gap: 0.75rem;
         animation: fadeInUp 0.4s ease-out;
       }
+
       .message.user {
         flex-direction: row-reverse;
       }
+
       .message-avatar {
         width: 40px;
         height: 40px;
@@ -420,6 +333,7 @@
         font-size: 1.5rem;
         overflow: hidden;
       }
+
       .message.user .message-avatar {
         background: var(--user-gradient);
       }
@@ -429,6 +343,7 @@
       .message.error .message-avatar {
         background: var(--error);
       }
+
       .message-content {
         max-width: 75%;
         padding: 1rem 1.25rem;
@@ -436,25 +351,30 @@
         position: relative;
         word-wrap: break-word;
       }
+
       .message.bot .message-content:hover .copy {
         opacity: 1;
       }
+
       .message.user .message-content {
         background: var(--accent);
         color: white;
         border-bottom-right-radius: 0.25rem;
       }
+
       .message.bot .message-content {
         background: var(--bg);
         color: var(--text-primary);
         border: 1px solid var(--border-color);
         border-bottom-left-radius: 0.25rem;
       }
+
       .message.error .message-content {
         background: var(--error);
         color: white;
         border-bottom-left-radius: 0.25rem;
       }
+
       .message-content .btn-retry {
         background: rgba(255, 255, 255, 0.2);
         color: white;
@@ -464,6 +384,7 @@
       .message-content .btn-retry:hover {
         background: rgba(255, 255, 255, 0.3);
       }
+
       .message-time {
         font-size: 0.75rem;
         color: var(--text-secondary);
@@ -486,6 +407,7 @@
         background: var(--surface);
         border-top: 1px solid var(--border-color);
       }
+
       .input-container {
         display: flex;
         align-items: flex-end;
@@ -496,10 +418,12 @@
         padding: 0.5rem 0.5rem 0.5rem 1rem;
         transition: all 0.3s ease;
       }
+
       .input-container:focus-within {
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
       }
+
       .message-input {
         flex: 1;
         background: transparent;
@@ -513,17 +437,20 @@
         overflow-y: auto;
         padding: 0.25rem 0;
       }
+
       .message-input:focus {
         outline: none;
       }
       .message-input::placeholder {
         color: var(--text-secondary);
       }
+
       .input-actions {
         display: flex;
         gap: 0.5rem;
         align-items: center;
       }
+
       .icon-btn {
         background: var(--surface);
         border: 1px solid var(--border-color);
@@ -538,10 +465,12 @@
         position: relative;
         font-size: 1.25rem;
       }
+
       .icon-btn:hover {
         border-color: var(--accent);
         color: var(--accent);
       }
+
       .upload-btn input {
         position: absolute;
         opacity: 0;
@@ -550,10 +479,6 @@
         cursor: pointer;
       }
 
-      /* * ==============================================
-        * THEME TOGGLE SWITCH
-        * ==============================================
-        */
       #theme-toggle-button {
         font-size: 12px;
         position: relative;
@@ -561,11 +486,13 @@
         width: 4.5em;
         cursor: pointer;
       }
+
       #toggle {
         opacity: 0;
         width: 0;
         height: 0;
       }
+
       #container,
       #patches,
       #stars,
@@ -577,41 +504,47 @@
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 0.25s;
       }
+
       #toggle:checked + svg #container {
         fill: #2b4360;
       }
+
       #toggle:checked + svg #button {
         transform: translate(28px, 2.333px);
       }
+
       #sun {
         opacity: 1;
       }
+
       #toggle:checked + svg #sun {
         opacity: 0;
       }
+
       #moon {
         opacity: 0;
       }
+
       #toggle:checked + svg #moon {
         opacity: 1;
       }
+
       #cloud {
         opacity: 1;
       }
+
       #toggle:checked + svg #cloud {
         opacity: 0;
       }
+
       #stars {
         opacity: 0;
       }
+
       #toggle:checked + svg #stars {
         opacity: 1;
       }
 
-      /* * ==============================================
-        * SEND BUTTON SWITCH
-        * ==============================================
-        */
       .switch {
         font-size: 15px;
         position: relative;
@@ -620,11 +553,13 @@
         height: 2em;
         --mud: #8b4513;
       }
+
       .switch input {
         opacity: 0;
         width: 0;
         height: 0;
       }
+
       .slider {
         position: absolute;
         cursor: pointer;
@@ -637,6 +572,7 @@
         border-radius: 30px;
         border: 2px solid black;
       }
+
       .slider:before {
         position: absolute;
         content: "";
@@ -647,6 +583,7 @@
         bottom: 0.3em;
         transition: 0.4s;
       }
+
       .plant {
         position: absolute;
         bottom: 4px;
@@ -655,6 +592,7 @@
         opacity: 0;
         transform: scale(0.8);
       }
+
       .seed {
         position: absolute;
         content: "";
@@ -665,42 +603,53 @@
         bottom: 0.3em;
         transition: 0.4s;
       }
+
       .switch input:checked + .slider {
         background-color: #156829;
       }
+
       .switch input:focus + .slider {
         box-shadow: 0 0 1px #156829;
       }
+
       .switch input:checked + .slider:before,
       .switch input:checked + .slider .seed {
         transform: translateX(1.5em);
       }
+
       .switch input:checked + .slider .seed {
         opacity: 0;
       }
+
       .switch input:checked + .slider .plant {
         animation: zoomIn 0.5s forwards;
       }
+
       @keyframes zoomIn {
         0% {
           transform: scale(0.8);
           opacity: 0;
         }
+
         100% {
           transform: scale(0.8);
           opacity: 1;
         }
       }
+
       .stop-btn-container .slider {
         background: #156829 !important;
       }
+
       .stop-btn-container .slider:before,
       .stop-btn-container .slider .seed {
         transform: translateX(1.5em);
       }
+
       .stop-btn-container .slider .seed {
         opacity: 0;
       }
+
       .stop-btn-container .slider .plant {
         opacity: 1;
         transform: scale(0.8);
@@ -717,6 +666,7 @@
         margin-bottom: 1rem;
         flex-wrap: wrap;
       }
+
       .preview-item {
         position: relative;
         border-radius: 0.5rem;
@@ -726,6 +676,7 @@
         border: 2px solid var(--border-color);
         animation: fadeInUp 0.3s ease-out;
       }
+
       .preview-item img {
         width: 100%;
         height: 100%;
@@ -734,6 +685,7 @@
       .preview-item.invalid {
         border-color: var(--error);
       }
+
       .preview-item .remove-btn {
         position: absolute;
         top: 4px;
@@ -756,6 +708,7 @@
         background: var(--error);
         transform: scale(1.1);
       }
+
       .welcome-message {
         text-align: center;
         padding: 2rem;
@@ -766,17 +719,20 @@
         justify-content: center;
         height: 100%;
       }
+
       .welcome-icon {
         font-size: 4rem;
         margin-bottom: 1rem;
         animation: float 3s ease-in-out infinite;
       }
+
       .welcome-message h3 {
         color: var(--text-primary);
         margin-bottom: 1rem;
         font-size: 1.5rem;
         font-weight: 700;
       }
+
       .quick-actions {
         display: flex;
         gap: 0.75rem;
@@ -784,6 +740,7 @@
         justify-content: center;
         margin-top: 1rem;
       }
+
       .quick-action {
         background: var(--surface);
         border: 1px solid var(--border-color);
@@ -794,6 +751,7 @@
         font-size: 0.9rem;
         color: var(--text-secondary);
       }
+
       .quick-action:hover {
         background: var(--bg);
         border-color: var(--accent);
@@ -814,13 +772,16 @@
         color: var(--text-secondary);
         padding: 1rem;
       }
+
       #progress-bar {
         padding: 0 1.5rem;
         margin-bottom: 1rem;
       }
+
       .typing-cursor {
         animation: blink 1s step-end infinite;
       }
+
       @keyframes blink {
         from,
         to {
@@ -885,6 +846,7 @@
         box-shadow: var(--shadow-light);
         font-size: 0.95rem;
       }
+
       .prose th,
       .prose td {
         padding: 1rem 1.25rem;
@@ -893,6 +855,7 @@
         border: 1px solid var(--border-color);
         line-height: 1.5;
       }
+
       .prose th {
         background: var(--surface);
         font-weight: 700;
@@ -902,23 +865,29 @@
         font-size: 0.85rem;
         border-bottom: 2px solid var(--border-color);
       }
+
       .prose td {
         background: var(--bg);
         color: var(--text-primary);
       }
+
       .prose tr:nth-child(even) td {
         background: var(--surface);
       }
+
       .light-theme .prose tr:nth-child(even) td {
         background: #f9fafb;
       }
+
       .prose tr:hover td {
         background: rgba(59, 130, 246, 0.05);
         transition: background-color 0.2s ease;
       }
+
       .light-theme .prose tr:hover td {
         background: rgba(59, 130, 246, 0.1);
       }
+
       .prose code {
         background: var(--border-color);
         padding: 0.2em 0.4em;
@@ -943,7 +912,9 @@
         * COPY BUTTON STYLES
         * ==============================================
         */
+
       .copy {
+        /* button */
         --button-bg: #353434;
         --button-hover-bg: #464646;
         --button-text-color: #cccccc;
@@ -952,6 +923,7 @@
         --button-diameter: 36px;
         --button-outline-width: 1px;
         --button-outline-color: rgb(141, 141, 141);
+        /* tooltip */
         --tooltip-bg: #f4f3f3;
         --toolptip-border-radius: 4px;
         --tooltip-font-family: Menlo, Roboto Mono, monospace;
@@ -960,6 +932,9 @@
         --tooltip-padding-x: 7px;
         --tooltip-padding-y: 7px;
         --tooltip-offset: 8px;
+      }
+
+      .copy {
         box-sizing: border-box;
         width: var(--button-diameter);
         height: var(--button-diameter);
@@ -971,6 +946,7 @@
         position: relative;
         outline: none;
       }
+
       .tooltip {
         position: absolute;
         opacity: 0;
@@ -988,9 +964,11 @@
         transition: all var(--tooltip-transition-duration)
           cubic-bezier(0.68, -0.55, 0.265, 1.55);
       }
+
       .tooltip::before {
         content: attr(data-text-initial);
       }
+
       .tooltip::after {
         content: "";
         position: absolute;
@@ -1003,37 +981,46 @@
         z-index: -999;
         pointer-events: none;
       }
+
       .copy svg {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
       }
+
       .checkmark {
         display: none;
       }
+
       .copy:hover .tooltip,
       .copy:focus:not(:focus-visible) .tooltip {
         opacity: 1;
         visibility: visible;
         top: calc((100% + var(--tooltip-offset)) * -1);
       }
+
       .copy:focus:not(:focus-visible) .tooltip::before {
         content: attr(data-text-end);
       }
+
       .copy:focus:not(:focus-visible) .clipboard {
         display: none;
       }
+
       .copy:focus:not(:focus-visible) .checkmark {
         display: block;
       }
+
       .copy:hover,
       .copy:focus {
         background-color: var(--button-hover-bg);
       }
+
       .copy:active {
         outline: var(--button-outline-width) solid var(--button-outline-color);
       }
+
       .copy:hover svg {
         color: var(--button-hover-text-color);
       }
@@ -1042,6 +1029,7 @@
         * CAPYBARA LOADER STYLES
         * ==============================================
         */
+
       .capybaraloader {
         width: 14em;
         height: 10em;
@@ -1178,6 +1166,7 @@
         height: 2em;
         animation: moveleg2 1s linear infinite 0.075s;
       }
+
       @keyframes moveleg {
         0% {
           transform: rotate(-45deg) translateX(-5%);
@@ -1189,6 +1178,7 @@
           transform: rotate(-45deg) translateX(-5%);
         }
       }
+
       @keyframes moveleg2 {
         0% {
           transform: rotate(45deg);
@@ -1200,6 +1190,7 @@
           transform: rotate(45deg);
         }
       }
+
       @keyframes movebody {
         0% {
           transform: translateX(0%);
@@ -1211,12 +1202,14 @@
           transform: translateX(0%);
         }
       }
+
       .loaderline {
         width: 50em;
         height: 0.5em;
         border-top: 0.5em dashed var(--color2);
         animation: moveline 10s linear infinite;
       }
+
       @keyframes moveline {
         0% {
           transform: translateX(0%);
@@ -1248,6 +1241,7 @@
           transform: translateY(0);
         }
       }
+
       @keyframes spin {
         from {
           transform: rotate(0deg);
@@ -1256,6 +1250,7 @@
           transform: rotate(360deg);
         }
       }
+
       @keyframes rotate {
         from {
           transform: rotate(0deg);
@@ -1264,6 +1259,7 @@
           transform: rotate(360deg);
         }
       }
+
       @keyframes float {
         0% {
           transform: translateY(0px);
@@ -1275,6 +1271,7 @@
           transform: translateY(0px);
         }
       }
+
       @keyframes pulse {
         0%,
         100% {
@@ -1286,19 +1283,26 @@
           box-shadow: 0 0 0 7px rgba(59, 130, 246, 0);
         }
       }
+
       @media (max-width: 768px) {
+        .preferences-grid {
+          grid-template-columns: 1fr;
+        }
         .container {
           padding: 0 1rem 1rem 1rem;
         }
         .header h1 {
           font-size: 2rem;
         }
+        .preferences-panel {
+          margin-top: 0;
+        }
         .message-content {
           max-width: 90%;
         }
         .chat-area {
           padding: 1rem;
-          max-height: calc(100vh - 200px); /* Adjusted height for mobile */
+          max-height: calc(100vh - 360px);
         }
         .input-panel {
           padding: 1rem;
@@ -1307,216 +1311,206 @@
     </style>
   </head>
   <body>
-    <div id="preferences-overlay" class="overlay"></div>
-
     <div class="container">
       <div class="header">
         <h1>
           <span>🌿</span>
           AgriBot
         </h1>
-        <div class="header-actions" style="display: flex; align-items: center; gap: 1rem">
-          <label id="theme-toggle-button">
-            <input type="checkbox" id="toggle" />
-            <svg
-              viewBox="0 0 69.667 44"
-              xmlns:xlink="http://www.w3.org/1999/xlink"
-              xmlns="http://www.w3.org/2000/svg"
+        <label id="theme-toggle-button">
+          <input type="checkbox" id="toggle" />
+          <svg
+            viewBox="0 0 69.667 44"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <g
+              transform="translate(3.5 3.5)"
+              data-name="Component 15 – 1"
+              id="Component_15_1"
             >
               <g
-                transform="translate(3.5 3.5)"
-                data-name="Component 15 – 1"
-                id="Component_15_1"
+                filter="url(#container)"
+                transform="matrix(1, 0, 0, 1, -3.5, -3.5)"
               >
-                <g
-                  filter="url(#container)"
-                  transform="matrix(1, 0, 0, 1, -3.5, -3.5)"
-                >
-                  <rect
-                    fill="#83cbd8"
-                    transform="translate(3.5 3.5)"
-                    rx="17.5"
-                    height="35"
-                    width="60.667"
-                    data-name="container"
-                    id="container"
-                  ></rect>
-                </g>
-                <g transform="translate(2.333 2.333)" id="button">
-                  <g data-name="sun" id="sun">
-                    <g
-                      filter="url(#sun-outer)"
-                      transform="matrix(1, 0, 0, 1, -5.83, -5.83)"
-                    >
-                      <circle
-                        fill="#f8e664"
-                        transform="translate(5.83 5.83)"
-                        r="15.167"
-                        cy="15.167"
-                        cx="15.167"
-                        data-name="sun-outer"
-                        id="sun-outer-2"
-                      ></circle>
-                    </g>
-                    <g
-                      filter="url(#sun)"
-                      transform="matrix(1, 0, 0, 1, -5.83, -5.83)"
-                    >
-                      <path
-                        fill="rgba(246,254,247,0.29)"
-                        transform="translate(9.33 9.33)"
-                        d="M11.667,0A11.667,11.667,0,1,1,0,11.667,11.667,11.667,0,0,1,11.667,0Z"
-                        data-name="sun"
-                        id="sun-3"
-                      ></path>
-                    </g>
+                <rect
+                  fill="#83cbd8"
+                  transform="translate(3.5 3.5)"
+                  rx="17.5"
+                  height="35"
+                  width="60.667"
+                  data-name="container"
+                  id="container"
+                ></rect>
+              </g>
+
+              <g transform="translate(2.333 2.333)" id="button">
+                <g data-name="sun" id="sun">
+                  <g
+                    filter="url(#sun-outer)"
+                    transform="matrix(1, 0, 0, 1, -5.83, -5.83)"
+                  >
                     <circle
-                      fill="#fcf4b9"
-                      transform="translate(8.167 8.167)"
-                      r="7"
-                      cy="7"
-                      cx="7"
-                      id="sun-inner"
+                      fill="#f8e664"
+                      transform="translate(5.83 5.83)"
+                      r="15.167"
+                      cy="15.167"
+                      cx="15.167"
+                      data-name="sun-outer"
+                      id="sun-outer-2"
                     ></circle>
                   </g>
-                  <g data-name="moon" id="moon">
-                    <g
-                      filter="url(#moon)"
-                      transform="matrix(1, 0, 0, 1, -31.5, -5.83)"
-                    >
-                      <circle
-                        fill="#cce6ee"
-                        transform="translate(31.5 5.83)"
-                        r="15.167"
-                        cy="15.167"
-                        cx="15.167"
-                        data-name="moon"
-                        id="moon-3"
-                      ></circle>
-                    </g>
-                    <g
-                      fill="#a6cad0"
-                      transform="translate(-24.415 -1.009)"
-                      id="patches"
-                    >
-                      <circle
-                        transform="translate(43.009 4.496)"
-                        r="2"
-                        cy="2"
-                        cx="2"
-                      ></circle>
-                      <circle
-                        transform="translate(39.366 17.952)"
-                        r="2"
-                        cy="2"
-                        cx="2"
-                        data-name="patch"
-                      ></circle>
-                      <circle
-                        transform="translate(33.016 8.044)"
-                        r="1"
-                        cy="1"
-                        cx="1"
-                        data-name="patch"
-                      ></circle>
-                      <circle
-                        transform="translate(51.081 18.888)"
-                        r="1"
-                        cy="1"
-                        cx="1"
-                        data-name="patch"
-                      ></circle>
-                      <circle
-                        transform="translate(33.016 22.503)"
-                        r="1"
-                        cy="1"
-                        cx="1"
-                        data-name="patch"
-                      ></circle>
-                      <circle
-                        transform="translate(50.081 10.53)"
-                        r="1.5"
-                        cy="1.5"
-                        cx="1.5"
-                        data-name="patch"
-                      ></circle>
-                    </g>
+                  <g
+                    filter="url(#sun)"
+                    transform="matrix(1, 0, 0, 1, -5.83, -5.83)"
+                  >
+                    <path
+                      fill="rgba(246,254,247,0.29)"
+                      transform="translate(9.33 9.33)"
+                      d="M11.667,0A11.667,11.667,0,1,1,0,11.667,11.667,11.667,0,0,1,11.667,0Z"
+                      data-name="sun"
+                      id="sun-3"
+                    ></path>
+                  </g>
+                  <circle
+                    fill="#fcf4b9"
+                    transform="translate(8.167 8.167)"
+                    r="7"
+                    cy="7"
+                    cx="7"
+                    id="sun-inner"
+                  ></circle>
+                </g>
+
+                <g data-name="moon" id="moon">
+                  <g
+                    filter="url(#moon)"
+                    transform="matrix(1, 0, 0, 1, -31.5, -5.83)"
+                  >
+                    <circle
+                      fill="#cce6ee"
+                      transform="translate(31.5 5.83)"
+                      r="15.167"
+                      cy="15.167"
+                      cx="15.167"
+                      data-name="moon"
+                      id="moon-3"
+                    ></circle>
+                  </g>
+                  <g
+                    fill="#a6cad0"
+                    transform="translate(-24.415 -1.009)"
+                    id="patches"
+                  >
+                    <circle
+                      transform="translate(43.009 4.496)"
+                      r="2"
+                      cy="2"
+                      cx="2"
+                    ></circle>
+                    <circle
+                      transform="translate(39.366 17.952)"
+                      r="2"
+                      cy="2"
+                      cx="2"
+                      data-name="patch"
+                    ></circle>
+                    <circle
+                      transform="translate(33.016 8.044)"
+                      r="1"
+                      cy="1"
+                      cx="1"
+                      data-name="patch"
+                    ></circle>
+                    <circle
+                      transform="translate(51.081 18.888)"
+                      r="1"
+                      cy="1"
+                      cx="1"
+                      data-name="patch"
+                    ></circle>
+                    <circle
+                      transform="translate(33.016 22.503)"
+                      r="1"
+                      cy="1"
+                      cx="1"
+                      data-name="patch"
+                    ></circle>
+                    <circle
+                      transform="translate(50.081 10.53)"
+                      r="1.5"
+                      cy="1.5"
+                      cx="1.5"
+                      data-name="patch"
+                    ></circle>
                   </g>
                 </g>
-                <g
-                  filter="url(#cloud)"
-                  transform="matrix(1, 0, 0, 1, -3.5, -3.5)"
-                >
-                  <path
-                    fill="#fff"
-                    transform="translate(-3466.47 -160.94)"
-                    d="M3512.81,173.815a4.463,4.463,0,0,1,2.243.62.95.95,0,0,1,.72-1.281,4.852,4.852,0,0,1,2.623.519c.034.02-.5-1.968.281-2.716a2.117,2.117,0,0,1,2.829-.274,1.821,1.821,0,0,1,.854,1.858c.063.037,2.594-.049,3.285,1.273s-.865,2.544-.807,2.626a12.192,12.192,0,0,1,2.278.892c.553.448,1.106,1.992-1.62,2.927a7.742,7.742,0,0,1-3.762-.3c-1.28-.49-1.181-2.65-1.137-2.624s-1.417,2.2-2.623,2.2a4.172,4.172,0,0,1-2.394-1.206,3.825,3.825,0,0,1-2.771.774c-3.429-.46-2.333-3.267-2.2-3.55A3.721,3.721,0,0,1,3512.81,173.815Z"
-                    data-name="cloud"
-                    id="cloud"
-                  ></path>
-                </g>
-                <g
-                  fill="#def8ff"
-                  transform="translate(3.585 1.325)"
-                  id="stars"
-                >
-                  <path
-                    transform="matrix(-1, 0.017, -0.017, -1, 24.231, 3.055)"
-                    d="M.774,0,.566.559,0,.539.458.933.25,1.492l.485-.361.458.394L1.024.953,1.509.592.943.572Z"
-                  ></path>
-                  <path
-                    transform="matrix(-0.777, 0.629, -0.629, -0.777, 23.185, 12.358)"
-                    d="M1.341.529.836.472.736,0,.505.46,0,.4.4.729l-.231.46L.605.932l.4.326L.9.786Z"
-                    data-name="star"
-                  ></path>
-                  <path
-                    transform="matrix(0.438, 0.899, -0.899, 0.438, 23.177, 29.735)"
-                    d="M.015,1.065.475.9l.285.365L.766.772l.46-.164L.745.494.751,0,.481.407,0,.293.285.658Z"
-                    data-name="star"
-                  ></path>
-                  <path
-                    transform="translate(12.677 0.388) rotate(104)"
-                    d="M1.161,1.6,1.059,1,1.574.722.962.607.86,0,.613.572,0,.457.446.881.2,1.454l.516-.274Z"
-                    data-name="star"
-                  ></path>
-                  <path
-                    transform="matrix(-0.07, 0.998, -0.998, -0.07, 11.066, 15.457)"
-                    d="M.873,1.648l.114-.62L1.579.945,1.03.62,1.144,0,.706.464.157.139.438.7,0,1.167l.592-.083Z"
-                    data-name="star"
-                  ></path>
-                  <path
-                    transform="translate(8.326 28.061) rotate(11)"
-                    d="M.593,0,.638.724,0,.982l.7.211.045.724.36-.64.7.211L1.342.935,1.7.294,1.063.552Z"
-                    data-name="star"
-                  ></path>
-                  <path
-                    transform="translate(5.012 5.962) rotate(172)"
-                    d="M.816,0,.5.455,0,.311.323.767l-.312.455.516-.215.323.456L.827.911,1.343.7.839.552Z"
-                    data-name="star"
-                  ></path>
-                  <path
-                    transform="translate(2.218 14.616) rotate(169)"
-                    d="M1.261,0,.774.571.114.3.487.967,0,1.538.728,1.32l.372.662.047-.749.728-.218L1.215.749Z"
-                    data-name="star"
-                  ></path>
-                </g>
               </g>
-            </svg>
-          </label>
-          <input id="checkbox" type="checkbox" />
-          <label class="toggle" for="checkbox">
-            <div id="bar1" class="bars"></div>
-            <div id="bar2" class="bars"></div>
-            <div id="bar3" class="bars"></div>
-          </label>
-        </div>
+
+              <g
+                filter="url(#cloud)"
+                transform="matrix(1, 0, 0, 1, -3.5, -3.5)"
+              >
+                <path
+                  fill="#fff"
+                  transform="translate(-3466.47 -160.94)"
+                  d="M3512.81,173.815a4.463,4.463,0,0,1,2.243.62.95.95,0,0,1,.72-1.281,4.852,4.852,0,0,1,2.623.519c.034.02-.5-1.968.281-2.716a2.117,2.117,0,0,1,2.829-.274,1.821,1.821,0,0,1,.854,1.858c.063.037,2.594-.049,3.285,1.273s-.865,2.544-.807,2.626a12.192,12.192,0,0,1,2.278.892c.553.448,1.106,1.992-1.62,2.927a7.742,7.742,0,0,1-3.762-.3c-1.28-.49-1.181-2.65-1.137-2.624s-1.417,2.2-2.623,2.2a4.172,4.172,0,0,1-2.394-1.206,3.825,3.825,0,0,1-2.771.774c-3.429-.46-2.333-3.267-2.2-3.55A3.721,3.721,0,0,1,3512.81,173.815Z"
+                  data-name="cloud"
+                  id="cloud"
+                ></path>
+              </g>
+
+              <g
+                fill="#def8ff"
+                transform="translate(3.585 1.325)"
+                id="stars"
+              >
+                <path
+                  transform="matrix(-1, 0.017, -0.017, -1, 24.231, 3.055)"
+                  d="M.774,0,.566.559,0,.539.458.933.25,1.492l.485-.361.458.394L1.024.953,1.509.592.943.572Z"
+                ></path>
+                <path
+                  transform="matrix(-0.777, 0.629, -0.629, -0.777, 23.185, 12.358)"
+                  d="M1.341.529.836.472.736,0,.505.46,0,.4.4.729l-.231.46L.605.932l.4.326L.9.786Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="matrix(0.438, 0.899, -0.899, 0.438, 23.177, 29.735)"
+                  d="M.015,1.065.475.9l.285.365L.766.772l.46-.164L.745.494.751,0,.481.407,0,.293.285.658Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="translate(12.677 0.388) rotate(104)"
+                  d="M1.161,1.6,1.059,1,1.574.722.962.607.86,0,.613.572,0,.457.446.881.2,1.454l.516-.274Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="matrix(-0.07, 0.998, -0.998, -0.07, 11.066, 15.457)"
+                  d="M.873,1.648l.114-.62L1.579.945,1.03.62,1.144,0,.706.464.157.139.438.7,0,1.167l.592-.083Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="translate(8.326 28.061) rotate(11)"
+                  d="M.593,0,.638.724,0,.982l.7.211.045.724.36-.64.7.211L1.342.935,1.7.294,1.063.552Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="translate(5.012 5.962) rotate(172)"
+                  d="M.816,0,.5.455,0,.311.323.767l-.312.455.516-.215.323.456L.827.911,1.343.7.839.552Z"
+                  data-name="star"
+                ></path>
+                <path
+                  transform="translate(2.218 14.616) rotate(169)"
+                  d="M1.261,0,.774.571.114.3.487.967,0,1.538.728,1.32l.372.662.047-.749.728-.218L1.215.749Z"
+                  data-name="star"
+                ></path>
+              </g>
+            </g>
+          </svg>
+        </label>
       </div>
 
-      <div class="preferences-panel" id="preferences-panel">
-        <div class="preferences-header">
-          <h3>Preferences</h3>
-          <button id="preferences-close-btn" class="icon-btn" aria-label="Close preferences">&times;</button>
-        </div>
+      <div class="preferences-panel">
         <div class="preferences-grid">
           <div class="input-group">
             <label for="region">Region</label>
@@ -1601,7 +1595,53 @@
 
       <div class="chat-container">
         <div class="chat-area" id="chat-area">
-          <!-- The welcome message is now added dynamically via JavaScript -->
+          <div class="welcome-message">
+            <div class="welcome-icon">🤖</div>
+            <h3>Welcome to AgriBot!</h3>
+            <p>I'm here to help you with:</p>
+            <div class="quick-actions">
+              <button
+                class="quick-action"
+                onclick="sendQuickMessage('What crops are suitable for my region?')"
+              >
+                Crop Recommendations
+              </button>
+              <button
+                class="quick-action"
+                onclick="sendQuickMessage('What is the current weather forecast?')"
+              >
+                Weather Info
+              </button>
+              <button
+                class="quick-action"
+                onclick="sendQuickMessage('How to prevent common plant diseases?')"
+              >
+                Disease Prevention
+              </button>
+              <button
+                class="quick-action"
+                onclick="sendQuickMessage('Best fertilizers for vegetables?')"
+              >
+                Fertilizer Guide
+              </button>
+            </div>
+            <p style="margin-top: 1.5rem; font-size: 0.9rem">
+              You can also upload plant images for disease detection!
+            </p>
+          </div>
+          <div id="progress-bar" class="mt-4 hidden">
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                id="progress"
+                class="bg-blue-600 h-2.5 rounded-full"
+                style="width: 0%"
+              ></div>
+            </div>
+            <p
+              id="progress-text"
+              class="text-center text-sm text-gray-400 mt-1"
+            ></p>
+          </div>
         </div>
 
         <div class="input-panel">
@@ -1743,7 +1783,7 @@
       const REQUEST_DELAY = 1000;
       let abortController;
       let typewriterInterval;
-      
+
       const chatArea = document.getElementById("chat-area");
       const messageInput = document.getElementById("message-input");
       const imageInput = document.getElementById("image-input");
@@ -1756,12 +1796,7 @@
       const progressBar = document.getElementById("progress-bar");
       const progress = document.getElementById("progress");
       const progressText = document.getElementById("progress-text");
-      
-      const preferencesPanel = document.getElementById("preferences-panel");
-      const preferencesOverlay = document.getElementById("preferences-overlay");
-      const menuCheckbox = document.getElementById("checkbox");
-      const preferencesCloseBtn = document.getElementById("preferences-close-btn");
-      
+
       document.addEventListener("DOMContentLoaded", () => {
         sendBtnContainer.addEventListener("click", (e) => {
           e.preventDefault();
@@ -1771,16 +1806,16 @@
             sendMessage();
           }
         });
-      
+
         const savedPrefs = JSON.parse(
           localStorage.getItem("userPrefs") || "{}"
         );
         if (savedPrefs.region) regionSelect.value = savedPrefs.region;
         if (savedPrefs.language) languageSelect.value = savedPrefs.language;
-      
+
         currentRegion = regionSelect.value;
         currentLanguage = languageSelect.value;
-      
+
         messageInput.addEventListener("input", autoResize);
         messageInput.addEventListener("keydown", (e) => {
           if (e.key === "Enter" && !e.shiftKey) {
@@ -1788,59 +1823,22 @@
             if (!isProcessing) sendMessage();
           }
         });
-      
+
         imageInput.addEventListener("change", handleImageUpload);
         themeToggle.addEventListener("change", toggleTheme);
-      
-        menuCheckbox.addEventListener("change", () => {
-          const isOpen = menuCheckbox.checked;
-          preferencesPanel.classList.toggle("open", isOpen);
-          preferencesOverlay.classList.toggle("open", isOpen);
-        });
-      
-        const closePanel = () => {
-          if (menuCheckbox.checked) {
-            menuCheckbox.checked = false;
-            menuCheckbox.dispatchEvent(new Event("change"));
-          }
-        };
-      
-        preferencesCloseBtn.addEventListener("click", closePanel);
-        preferencesOverlay.addEventListener("click", closePanel);
-      
         setPreferences(true);
-        addInitialBotMessage();
       });
-      
-      function addInitialBotMessage() {
-          const welcomeHTML = `
-              <div class="welcome-message">
-                  <div class="welcome-icon">🤖</div>
-                  <h3>Namaste! Welcome to AgriBot!</h3>
-                  <p>I'm here to help you with:</p>
-                  <div class="quick-actions">
-                      <button class="quick-action" onclick="sendQuickMessage('What crops are suitable for Prayagraj?')">Crop Recommendations</button>
-                      <button class="quick-action" onclick="sendQuickMessage('What is the current weather forecast?')">Weather Info</button>
-                      <button class="quick-action" onclick="sendQuickMessage('How to prevent common plant diseases?')">Disease Prevention</button>
-                      <button class="quick-action" onclick="sendQuickMessage('Best fertilizers for vegetables?')">Fertilizer Guide</button>
-                  </div>
-                  <p style="margin-top: 1.5rem; font-size: 0.9rem;">
-                      You can also upload plant images for disease detection!
-                  </p>
-              </div>`;
-          chatArea.innerHTML = welcomeHTML;
-      }
 
       function autoResize() {
         messageInput.style.height = "auto";
         messageInput.style.height = messageInput.scrollHeight + "px";
       }
-      
+
       function toggleTheme() {
         isLightTheme = themeToggle.checked;
         document.body.classList.toggle("light-theme", isLightTheme);
       }
-      
+
       function typewriterEffect(element, text, onComplete) {
         let i = 0;
         element.innerHTML = "";
@@ -1848,7 +1846,7 @@
         cursor.className = "typing-cursor";
         cursor.textContent = "█";
         element.appendChild(cursor);
-      
+
         clearInterval(typewriterInterval);
         typewriterInterval = setInterval(() => {
           if (i < text.length) {
@@ -1862,7 +1860,7 @@
           }
         }, 20);
       }
-      
+
       async function compressImage(file) {
         return new Promise((resolve, reject) => {
           const img = new Image();
@@ -1900,7 +1898,7 @@
           img.onerror = () => reject(new Error(`Invalid image: ${file.name}`));
         });
       }
-      
+
       function updateProgress(percent, text = "") {
         progressBar.classList.remove("hidden");
         progress.style.width = `${percent}%`;
@@ -1908,7 +1906,7 @@
         if (percent >= 100)
           setTimeout(() => progressBar.classList.add("hidden"), 500);
       }
-      
+
       async function setPreferences(isInitial = false) {
         currentRegion = regionSelect.value;
         currentLanguage = languageSelect.value;
@@ -1924,18 +1922,14 @@
             )}`
           );
           addMessage("bot", `Great! I've updated your preferences.`);
-          if (menuCheckbox.checked) {
-            menuCheckbox.checked = false;
-            menuCheckbox.dispatchEvent(new Event("change"));
-          }
         }
       }
-      
+
       function getLanguageName(code) {
         const option = languageSelect.querySelector(`option[value="${code}"]`);
         return option ? option.textContent : "English";
       }
-      
+
       async function handleImageUpload(e) {
         const files = Array.from(e.target.files);
         if (files.length > 3) {
@@ -1970,18 +1964,18 @@
         await Promise.all(processingPromises);
         updateProgress(100);
       }
-      
+
       function removeImage(previewId) {
         uploadedImages = uploadedImages.filter((img) => img.id !== previewId);
         document.getElementById(previewId)?.remove();
         if (uploadedImages.length === 0) imageInput.value = "";
       }
-      
+
       function sendQuickMessage(message) {
         messageInput.value = message;
         sendMessage();
       }
-      
+
       function setSendButtonState(state) {
         if (state === "sending") {
           isProcessing = true;
@@ -1993,7 +1987,7 @@
           sendBtnContainer.classList.remove("stop-btn-container");
         }
       }
-      
+
       function stopGeneration() {
         if (abortController) abortController.abort();
         clearInterval(typewriterInterval);
@@ -2005,7 +1999,7 @@
           lastBotMessage.innerHTML = `<p>Generation stopped.</p>`;
         }
       }
-      
+
       async function sendMessage() {
         if (isProcessing) return;
         const now = Date.now();
@@ -2017,14 +2011,14 @@
           return;
         }
         lastRequestTime = now;
-      
+
         const message = messageInput.value.trim();
         const hasImages = uploadedImages.length > 0;
         if (!message && !hasImages) return;
-      
+
         setSendButtonState("sending");
         abortController = new AbortController();
-      
+
         document.querySelector(".welcome-message")?.remove();
         if (message) addMessage("user", message);
         if (hasImages)
@@ -2032,18 +2026,17 @@
             "user",
             `Uploaded ${uploadedImages.length} image(s) for analysis.`
           );
-      
+
         const botMessageDiv = addMessage("bot", "", true);
         const messageContentElement =
           botMessageDiv.querySelector(".message-content");
-      
+
         const formData = new FormData();
         if (message) formData.append("query", message);
         uploadedImages.forEach((img) => formData.append("image", img.file));
-      
+
         try {
-          // NOTE: These are placeholder endpoints. You would need a real backend server.
-          const endpoint = hasImages ? "/upload" : "/chat"; 
+          const endpoint = hasImages ? "/upload" : "/chat";
           const res = await fetchWithRetry(
             endpoint,
             {
@@ -2054,20 +2047,20 @@
             3,
             1000
           );
-      
+
           if (!res.ok) {
             const errorMsg = await res.json();
             throw new Error(errorMsg.error || "An unknown error occurred.");
           }
-      
+
           const data = await res.json();
           const responseText = hasImages ? data.remedy : data.response;
-      
+
           const cleanTextForTyping = responseText.replace(
             /[`*#_~[\]()<>|]/g,
             ""
           );
-      
+
           typewriterEffect(messageContentElement, cleanTextForTyping, () => {
             messageContentElement.innerHTML = marked.parse(responseText);
             const time = document.createElement("div");
@@ -2076,24 +2069,25 @@
               hour: "2-digit",
               minute: "2-digit",
             });
-      
+
             const copyBtn = document.createElement("button");
             copyBtn.className = "copy";
             copyBtn.innerHTML = `
-                <span data-text-end="Copied!" data-text-initial="Copy to clipboard" class="tooltip"></span>
-                <span>
-                  <svg xml:space="preserve" style="enable-background:new 0 0 512 512" viewBox="0 0 6.35 6.35" y="0" x="0" height="20" width="20" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" class="clipboard">
-                    <g><path fill="currentColor" d="M2.43.265c-.3 0-.548.236-.573.53h-.328a.74.74 0 0 0-.735.734v3.822a.74.74 0 0 0 .735.734H4.82a.74.74 0 0 0 .735-.734V1.529a.74.74 0 0 0-.735-.735h-.328a.58.58 0 0 0-.573-.53zm0 .529h1.49c.032 0 .049.017.049.049v.431c0 .032-.017.049-.049.049H2.43c-.032 0-.05-.017-.05-.049V.843c0-.032.018-.05.05-.05zm-.901.53h.328c.026.292.274.528.573.528h1.49a.58.58 0 0 0 .573-.529h.328a.2.2 0 0 1 .206.206v3.822a.2.2 0 0 1-.206.205H1.53a.2.2 0 0 1-.206-.205V1.529a.2.2 0 0 1 .206-.206z"></path></g>
-                  </svg>
-                  <svg xml:space="preserve" style="enable-background:new 0 0 512 512" viewBox="0 0 24 24" y="0" x="0" height="18" width="18" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" class="checkmark">
-                    <g><path data-original="#000000" fill="currentColor" d="M9.707 19.121a.997.997 0 0 1-1.414 0l-5.646-5.647a1.5 1.5 0 0 1 0-2.121l.707-.707a1.5 1.5 0 0 1 2.121 0L9 14.171l9.525-9.525a1.5 1.5 0 0 1 2.121 0l.707.707a1.5 1.5 0 0 1 0 2.121z"></path></g>
-                  </svg>
-                </span>`;
+              <span data-text-end="Copied!" data-text-initial="Copy to clipboard" class="tooltip"></span>
+              <span>
+                <svg xml:space="preserve" style="enable-background:new 0 0 512 512" viewBox="0 0 6.35 6.35" y="0" x="0" height="20" width="20" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" class="clipboard">
+                  <g><path fill="currentColor" d="M2.43.265c-.3 0-.548.236-.573.53h-.328a.74.74 0 0 0-.735.734v3.822a.74.74 0 0 0 .735.734H4.82a.74.74 0 0 0 .735-.734V1.529a.74.74 0 0 0-.735-.735h-.328a.58.58 0 0 0-.573-.53zm0 .529h1.49c.032 0 .049.017.049.049v.431c0 .032-.017.049-.049.049H2.43c-.032 0-.05-.017-.05-.049V.843c0-.032.018-.05.05-.05zm-.901.53h.328c.026.292.274.528.573.528h1.49a.58.58 0 0 0 .573-.529h.328a.2.2 0 0 1 .206.206v3.822a.2.2 0 0 1-.206.205H1.53a.2.2 0 0 1-.206-.205V1.529a.2.2 0 0 1 .206-.206z"></path></g>
+                </svg>
+                <svg xml:space="preserve" style="enable-background:new 0 0 512 512" viewBox="0 0 24 24" y="0" x="0" height="18" width="18" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" class="checkmark">
+                  <g><path data-original="#000000" fill="currentColor" d="M9.707 19.121a.997.997 0 0 1-1.414 0l-5.646-5.647a1.5 1.5 0 0 1 0-2.121l.707-.707a1.5 1.5 0 0 1 2.121 0L9 14.171l9.525-9.525a1.5 1.5 0 0 1 2.121 0l.707.707a1.5 1.5 0 0 1 0 2.121z"></path></g>
+                </svg>
+              </span>`;
             copyBtn.onclick = () => copyToClipboard(responseText, copyBtn);
-            copyBtn.style.position = "absolute";
-            copyBtn.style.top = "0.5rem";
-            copyBtn.style.right = "0.5rem";
-      
+            copyBtn.style.position = 'absolute';
+            copyBtn.style.top = '0.5rem';
+            copyBtn.style.right = '0.5rem';
+
+
             messageContentElement.appendChild(time);
             messageContentElement.appendChild(copyBtn);
             setSendButtonState("idle");
@@ -2104,14 +2098,7 @@
             messageContentElement.innerHTML =
               "<p>Generation stopped by user.</p>";
           } else {
-            // Mock response for demonstration since there's no backend
-            let mockResponse = "I'm sorry, I couldn't connect to my services right now. Please try again later.";
-            if (message.toLowerCase().includes("weather")) {
-                mockResponse = "The weather in Prayagraj is currently clear and sunny, with a high of 38°C. No rain is expected today.";
-            } else if (message.toLowerCase().includes("crop")) {
-                mockResponse = "For the current season in Prayagraj, you could consider planting **Paddy (Rice)**, **Maize**, or **Moong Dal**. Ensure proper irrigation as the monsoon season progresses.";
-            }
-            messageContentElement.innerHTML = `<p>${mockResponse}</p>`;
+            messageContentElement.innerHTML = `<p>Error: ${error.message}</p>`;
           }
           setSendButtonState("idle");
         } finally {
@@ -2122,7 +2109,7 @@
           imageInput.value = "";
         }
       }
-      
+
       function copyToClipboard(text, buttonElement) {
         const tempTextArea = document.createElement("textarea");
         tempTextArea.value = text;
@@ -2139,11 +2126,10 @@
         }
         document.body.removeChild(tempTextArea);
       }
-      
+
       async function fetchWithRetry(url, options, retries, backoff) {
         for (let i = 0; i < retries; i++) {
           try {
-            // This will fail in a local file, which is handled in the catch block
             return await fetch(url, options);
           } catch (error) {
             if (i === retries - 1 || error.name === "AbortError") throw error;
@@ -2153,39 +2139,39 @@
           }
         }
       }
-      
+
       function addMessage(type, content, isLoading = false) {
         const messageDiv = document.createElement("div");
         messageDiv.className = `message ${type}`;
-      
+
         const avatar = document.createElement("div");
         avatar.className = "message-avatar";
         const icons = { user: "👤", bot: "🤖", error: "⚠️" };
         avatar.innerHTML = `<span>${icons[type] || ""}</span>`;
-      
+
         const messageContent = document.createElement("div");
         messageContent.className = "message-content";
-      
+
         if (isLoading) {
           messageContent.innerHTML = `<div class="loading">
-              <div class="capybaraloader">
-                <div class="capybara">
-                  <div class="capyhead">
-                    <div class="capyear"><div class="capyear2"></div></div>
-                    <div class="capyear"></div>
-                    <div class="capymouth"><div class="capylips"></div><div class="capylips"></div></div>
-                    <div class="capyeye"></div>
-                    <div class="capyeye"></div>
-                  </div>
-                  <div class="capyleg"></div>
-                  <div class="capyleg2"></div>
-                  <div class="capyleg2"></div>
-                  <div class="capy"></div>
+            <div class="capybaraloader">
+              <div class="capybara">
+                <div class="capyhead">
+                  <div class="capyear"><div class="capyear2"></div></div>
+                  <div class="capyear"></div>
+                  <div class="capymouth"><div class="capylips"></div><div class="capylips"></div></div>
+                  <div class="capyeye"></div>
+                  <div class="capyeye"></div>
                 </div>
-                <div class="loader"><div class="loaderline"></div></div>
+                <div class="capyleg"></div>
+                <div class="capyleg2"></div>
+                <div class="capyleg2"></div>
+                <div class="capy"></div>
               </div>
-              <span>Processing...</span>
-            </div>`;
+              <div class="loader"><div class="loaderline"></div></div>
+            </div>
+            <span>Processing...</span>
+          </div>`;
         } else {
           messageContent.innerHTML = content;
           const time = document.createElement("div");
@@ -2196,7 +2182,7 @@
           });
           messageContent.appendChild(time);
         }
-      
+
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(messageContent);
         chatArea.appendChild(messageDiv);
